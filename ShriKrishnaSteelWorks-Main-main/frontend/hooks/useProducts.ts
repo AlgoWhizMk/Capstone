@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { API_ORIGIN } from "../src/services/api";
 
-const API = `${API_ORIGIN}/api/products`;
+const API = API_ORIGIN
+  ? `${API_ORIGIN}/api/products`
+  : "/api/products";
 
 export interface ApiProduct {
   productId: string;
