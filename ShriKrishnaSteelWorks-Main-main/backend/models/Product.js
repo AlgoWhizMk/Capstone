@@ -1,0 +1,51 @@
+import mongoose from 'mongoose';
+
+const productSchema = new mongoose.Schema({
+  productId:               { type: String, required: true, unique: true },
+  productName:             { type: String, required: true },
+  category:                { type: String, required: true, index: true },
+  furnitureType:           String,
+  modelNumber:             String,
+  brandName:               String,
+  availability:            String,
+  steelGrade:              String,
+  topMaterial:             String,
+  frameMaterial:           String,
+  frameThickness:          String,
+  surfaceFinish:           String,
+  enclosureMaterial:       String,
+  color:                   String,
+  corrosionResistanceLevel:String,
+  loadCapacityKg:          Number,
+  seatingCapacity:         mongoose.Schema.Types.Mixed,
+  usageArea:               String,
+  recommendedFor:          String,
+  length_cm:               Number,
+  width_cm:                Number,
+  height_cm:               Number,
+  weight_kg:               Number,
+  maximumWeightRecommendation_kg: Number,
+  basePriceINR:            Number,
+  discountPercentage:      Number,
+  finalPriceINR:           Number,
+  stockQuantity:           Number,
+  rating:                  Number,
+  reviewsCount:            Number,
+  salesCount:              Number,
+  warrantyYears:           Number,
+  productDescription:      String,
+  features:                String,
+  customizationAvailable:  String,
+  leadTimeDays:            Number,
+  installationSupport:     String,
+  maintenanceRequired:     String,
+  countryOfOrigin:         String,
+  createdAt:               String,
+});
+
+productSchema.index({
+  productName: 'text', category: 'text',
+  steelGrade: 'text', features: 'text',
+});
+
+export default mongoose.model('Product', productSchema);

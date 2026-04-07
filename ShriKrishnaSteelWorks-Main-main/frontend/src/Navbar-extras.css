@@ -1,0 +1,331 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAVBAR ADDITIONS — Search Bar + Local Logo
+   Add these styles to your skw-styles.css (at the bottom)
+   OR create a new file: src/navbar-extras.css
+   ═══════════════════════════════════════════════════════════════ */
+/* ── User Avatar Button ───────────────────────────────── */
+.skw-user-menu {
+  position: relative;
+}
+
+.skw-avatar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+.skw-avatar-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.skw-avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #d4a017;
+}
+
+.skw-avatar-initials {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #d4a017;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #d4a017;
+}
+
+.skw-avatar-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: inherit;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Dropdown ─────────────────────────────────────────── */
+.skw-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  min-width: 200px;
+  z-index: 999;
+  overflow: hidden;
+  animation: fadeDown 0.15s ease;
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+.skw-dropdown-header {
+  padding: 14px 16px 10px;
+}
+.skw-dropdown-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1a1a1a;
+  margin: 0;
+}
+.skw-dropdown-email {
+  font-size: 12px;
+  color: #888;
+  margin: 2px 0 0;
+}
+
+.skw-dropdown-divider {
+  border: none;
+  border-top: 1px solid #f0f0f0;
+  margin: 0;
+}
+
+.skw-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #333;
+  text-decoration: none;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.skw-dropdown-item:hover {
+  background: #f7f7f7;
+}
+.skw-dropdown-logout {
+  color: #e53935;
+}
+.skw-dropdown-logout:hover {
+  background: #fff5f5;
+}
+/* ── Local Logo Image ───────────────────────────────────────────── */
+.skw-logo-img {
+  height: 42px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  /* If your logo has a white/light background, use this to blend it: */
+  /* mix-blend-mode: luminosity; */
+}
+
+/* ── Nav Icon Buttons (Search + Cart unified style) ─────────────── */
+.skw-nav-icon-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.skw-nav-icon-btn:hover {
+  background: rgba(74,144,217,0.12);
+  border-color: var(--steel);
+  color: var(--white);
+}
+.skw-icon-active {
+  background: rgba(74,144,217,0.15);
+  border-color: var(--steel);
+  color: var(--steel);
+}
+
+/* ── Hamburger X animation ──────────────────────────────────────── */
+.skw-ham-x { transform-origin: center; }
+.skw-ham-x1 { transform: translateY(7px) rotate(45deg); }
+.skw-ham-x2 { opacity: 0; transform: scaleX(0); }
+.skw-ham-x3 { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── Full-Width Search Bar (slides down below navbar) ───────────── */
+.skw-search-bar {
+  position: fixed;
+  top: 72px; /* sits just below navbar */
+  left: 0; right: 0;
+  z-index: 999;
+  background: rgba(7, 21, 41, 0.98);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 4rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease, opacity 0.25s ease;
+  opacity: 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.skw-search-open {
+  max-height: 160px;
+  padding: 1.25rem 4rem;
+  opacity: 1;
+}
+
+.skw-search-form {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 800px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  transition: border-color 0.2s;
+}
+.skw-search-form:focus-within {
+  border-color: var(--steel);
+  box-shadow: 0 0 0 3px rgba(74,144,217,0.12);
+}
+
+.skw-search-icon-form {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.skw-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--white);
+  min-width: 0;
+}
+.skw-search-input::placeholder { color: var(--muted); }
+
+.skw-search-clear {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+.skw-search-clear:hover { color: var(--white); }
+
+.skw-search-submit {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--steel);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.2rem;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.skw-search-submit:hover { background: var(--steel-glow); }
+
+.skw-search-close {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.skw-search-close:hover { border-color: rgba(255,80,80,0.4); color: #ff5050; }
+
+/* Quick suggestion chips */
+.skw-search-suggestions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  max-width: 800px;
+  margin: 0.75rem auto 0;
+}
+.skw-suggestion-chip {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.3rem 0.85rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.skw-suggestion-chip:hover {
+  border-color: var(--steel);
+  color: var(--white);
+  background: rgba(74,144,217,0.1);
+}
+
+/* Dark overlay behind search bar */
+.skw-search-overlay {
+  position: fixed;
+  inset: 0;
+  top: 72px;
+  z-index: 998;
+  background: rgba(0,0,0,0.45);
+  animation: overlayFade 0.2s ease;
+}
+@keyframes overlayFade { from{opacity:0} to{opacity:1} }
+
+/* ── Mobile Search ──────────────────────────────────────────────── */
+.skw-mobile-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.skw-mobile-search-input {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--white);
+  outline: none;
+}
+.skw-mobile-search-input:focus { border-color: var(--steel); }
+.skw-mobile-search-btn {
+  width: 36px; height: 36px;
+  background: var(--steel);
+  border: none;
+  border-radius: 8px;
+  color: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Responsive adjustments ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .skw-search-bar { padding: 0 1.5rem; }
+  .skw-search-open { padding: 1rem 1.5rem; }
+  .skw-search-overlay { top: 60px; }
+}
