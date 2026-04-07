@@ -23,12 +23,14 @@ const devOrigins = [
 
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow requests with no origin (like mobile apps, curl, Postman)
+    // Allow requests with no origin (Postman, mobile, curl)
     if (!origin) return cb(null, true);
-    // In production, allow Vercel domains and any configured frontend URL
-    if (process.env.NODE_ENV === "production") return cb(null, true);
-    // In development, restrict to localhost
-    if (devOrigins.includes(origin)) return cb(null, true);
+    // Allow all Vercel deployments (*.vercel.app) and any custom domain set in FRONTEND_URL
+    if (
+      origin.endsWith(".vercel.app") ||
+      origin === process.env.FRONTEND_URL ||
+      devOrigins.includes(origin)
+    ) return cb(null, true);
     return cb(null, false);
   },
   credentials: true,

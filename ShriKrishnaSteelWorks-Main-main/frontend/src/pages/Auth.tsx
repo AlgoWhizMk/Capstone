@@ -1,6 +1,6 @@
 // src/pages/Auth.tsx
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   signIn, signUp, signInWithGoogle, resetPassword,
 } from "../services/firebase";
@@ -229,21 +229,21 @@ export default function Auth() {
   const switchPortal = (p: Portal) => {
     if (p === portal) return;
     setFlip(true);
-    setTimeout(() => { 
+    setTimeout(() => {
       navigate(`/login?role=${p}`);
-      setMode("login"); 
-      clearForm(); 
-      setFlip(false); 
+      setMode("login");
+      clearForm();
+      setFlip(false);
     }, 250);
   };
 
   const switchMode = (m: Mode) => {
     if (m === mode) return;
     setFlip(true);
-    setTimeout(() => { 
-      setMode(m); 
-      clearForm(); 
-      setFlip(false); 
+    setTimeout(() => {
+      setMode(m);
+      clearForm();
+      setFlip(false);
     }, 250);
   };
 
@@ -285,16 +285,16 @@ export default function Auth() {
       const c = typeof err === "object" && err !== null && "code" in err
         ? String((err as { code?: string }).code ?? "")
         : "";
-      const msg = 
+      const msg =
         c === "auth/user-not-found" ? "No account found with this email" :
-        c === "auth/wrong-password" ? "Incorrect password" :
-        c === "auth/email-already-in-use" ? "Email already registered" :
-        c === "auth/too-many-requests" ? "Too many attempts — try again later" :
-        c === "auth/invalid-credential" ? "Invalid email or password" :
-        c === "auth/weak-password" ? "Password is too weak (min 6 chars)" :
-        c === "auth/operation-not-allowed" ? "Email/Password sign in is disabled in Firebase!" :
-        "Error: " + (c || "Unknown backend failure");
-        
+          c === "auth/wrong-password" ? "Incorrect password" :
+            c === "auth/email-already-in-use" ? "Email already registered" :
+              c === "auth/too-many-requests" ? "Too many attempts — try again later" :
+                c === "auth/invalid-credential" ? "Invalid email or password" :
+                  c === "auth/weak-password" ? "Password is too weak (min 6 chars)" :
+                    c === "auth/operation-not-allowed" ? "Email/Password sign in is disabled in Firebase!" :
+                      "Error: " + (c || "Unknown backend failure");
+
       setGlobalErr(msg);
       showToast("❌ " + msg);
     } finally {
@@ -361,16 +361,16 @@ export default function Auth() {
 
             {/* Portal Toggle: Customer / Admin — INSIDE card, well below navbar */}
             <div className="auth-portal-toggle">
-              <button 
-                type="button" 
-                className={`auth-tab ${!isAdmin ? "auth-tab--active" : ""}`} 
+              <button
+                type="button"
+                className={`auth-tab ${!isAdmin ? "auth-tab--active" : ""}`}
                 onClick={() => switchPortal("user")}
               >
                 Customer
               </button>
-              <button 
-                type="button" 
-                className={`auth-tab ${isAdmin ? "auth-tab--active" : ""}`} 
+              <button
+                type="button"
+                className={`auth-tab ${isAdmin ? "auth-tab--active" : ""}`}
                 onClick={() => switchPortal("admin")}
               >
                 Admin
