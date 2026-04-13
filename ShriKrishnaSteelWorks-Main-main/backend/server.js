@@ -5,31 +5,25 @@ import dotenv     from "dotenv";
 import userRoutes    from "./routes/users.js";
 import orderRoutes   from "./routes/orders.js";
 import productRoutes from "./routes/products.js";
+import chatbotRoute  from "./routes/chatbot.js";
 
+// Using dotenv
 dotenv.config();
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-// In production (Vercel), the frontend and backend share the same domain,
-// so we allow all origins. In dev, we restrict to localhost only.
-const devOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-];
-
 app.use(cors({
   origin: (origin, cb) => {
     // Allow requests with no origin (Postman, mobile, curl)
     if (!origin) return cb(null, true);
-    // Allow all Vercel deployments (*.vercel.app) and any custom domain set in FRONTEND_URL
+    // Allow all Vercel deployments (*.vercel.app), Render, and ANY localhost/127.0.0.1
     if (
       origin.endsWith(".vercel.app") ||
-      origin === process.env.FRONTEND_URL ||
-      devOrigins.includes(origin)
+      origin.includes("localhost") ||
+      origin.includes("127.0.0.1") ||
+      origin === process.env.FRONTEND_URL
     ) return cb(null, true);
     return cb(null, false);
   },
@@ -52,6 +46,7 @@ if (process.env.MONGO_URI) {
 app.use("/api/users",    userRoutes);
 app.use("/api/orders",   orderRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/chat",     chatbotRoute);   // 🔱 KrishnaBot LLM chatbot
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", message: "ShriKrishna SteelWorks API is running ✅" });

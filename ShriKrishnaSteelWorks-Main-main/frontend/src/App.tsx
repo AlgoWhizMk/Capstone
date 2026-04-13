@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
+import ChatBot from "./components/ChatBot";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Products from "./pages/Products";
@@ -47,6 +48,7 @@ function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>
         <Footer />
+        <ChatBot />
       </AuthProvider>
     </Router>
   );
