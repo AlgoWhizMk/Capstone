@@ -28,12 +28,23 @@ router.get("/:firebaseUid", async (req, res) => {
 // ── POST /api/users — create or update user (called after Firebase login) ────
 router.post("/", async (req, res) => {
   try {
-    const { firebaseUid, name, email, role, company, phone, photoURL } = req.body;
+    const { firebaseUid, name, email, company, phone, photoURL } = req.body;
 
-    // upsert: update if exists, create if not
+    // Auto-assign role: if email matches admin list → admin, else user
+    // Never downgrade an existing admin via this endpoint
+    const adminEmails = (process.env.ADMIN_EMAIL || "")
+      .split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+    const isAdminEmail = adminEmails.includes((email || "").toLowerCase());
+
+    // Check existing role first so we don't downgrade manually-set admins
+    const existing = await User.findOne({ firebaseUid });
+    const resolvedRole = isAdminEmail
+      ? "admin"
+      : (existing?.role === "admin" ? "admin" : "user");
+
     const user = await User.findOneAndUpdate(
       { firebaseUid },
-      { firebaseUid, name, email, role: role || "user", company, phone, photoURL },
+      { firebaseUid, name, email, role: resolvedRole, company, phone, photoURL },
       { new: true, upsert: true, runValidators: true }
     );
 
@@ -46,7 +57,7 @@ router.post("/", async (req, res) => {
 // ── PUT /api/users/:firebaseUid — update profile fields ──────────────────────
 router.put("/:firebaseUid", async (req, res) => {
   try {
-    const allowed = ["name", "phone", "company", "address", "photoURL"];
+    const allowed = ["name", "phone", "company", "address", "photoURL", "role"];
     const updates = {};
     allowed.forEach((key) => {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
@@ -60,6 +71,17 @@ router.put("/:firebaseUid", async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// ── DELETE /api/users/:firebaseUid — delete a user (admin only) ──────────────
+router.delete("/:firebaseUid", async (req, res) => {
+  try {
+    const user = await User.findOneAndDelete({ firebaseUid: req.params.firebaseUid });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "User deleted", user });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

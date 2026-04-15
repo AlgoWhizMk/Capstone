@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -44,7 +45,7 @@ const PRODUCTS: Product[] = [
     description: "Fe500 & Fe550 grade high-strength bars for seismic zones. Superior bonding with concrete.",
     price: "₹62,000 / MT",
     icon: "▬",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1504611695225-7012bf38cb7a?w=600&q=80",
     details: {
       grades: ["Fe415", "Fe500", "Fe500D", "Fe550", "Fe550D"],
       sizes: "8mm – 40mm diameter",
@@ -60,7 +61,7 @@ const PRODUCTS: Product[] = [
     description: "IS 2062 grade mild steel plates. Custom thickness 3mm–50mm available for industrial use.",
     price: "₹71,000 / MT",
     icon: "◼",
-    image: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1531496681163-da50b7d8e2cd?w=600&q=80",
     details: {
       grades: ["IS 2062 E250", "IS 2062 E350", "IS 8500"],
       sizes: "3mm – 50mm thickness, up to 3000mm width",
@@ -76,7 +77,7 @@ const PRODUCTS: Product[] = [
     description: "ISA angles, ISMB beams, ISMC channels. Precision-rolled for heavy engineering projects.",
     price: "₹67,500 / MT",
     icon: "◣",
-    image: "https://images.unsplash.com/photo-1565016791693-3b8bd09aa3cd?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1590859808308-3d2d9c515b1a?w=600&q=80",
     details: {
       grades: ["IS 2062 E250", "IS 2062 E350"],
       sizes: "25×25mm – 200×200mm (Angles), 100mm – 600mm (Beams)",
@@ -92,7 +93,7 @@ const PRODUCTS: Product[] = [
     description: "ERW and seamless pipes for fluid transport and structural applications. All sizes in stock.",
     price: "₹78,000 / MT",
     icon: "○",
-    image: "https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&q=80",
     details: {
       grades: ["IS 1239", "IS 3589", "API 5L"],
       sizes: "15mm – 600mm NB",
@@ -124,13 +125,125 @@ const PRODUCTS: Product[] = [
     description: "Steel gratings, chequered plates, expanded mesh — ready for immediate dispatch.",
     price: "₹54,000 / MT",
     icon: "⊞",
-    image: "https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80",
     details: {
       grades: ["IS 2062", "IS 1977"],
       sizes: "Standard sizes available, custom on request",
       applications: ["Flooring", "Walkways", "Safety Barriers", "Ventilation"],
       minOrder: "1 MT",
       delivery: "2–5 working days",
+    },
+  },
+  {
+    id: 7,
+    name: "Steel Furniture Works",
+    category: "Steel Furniture Works",
+    description: "Heavy-duty steel chairs, tables, industrial racks & storage solutions. Powder-coated finish available.",
+    price: "Get Quote",
+    icon: "🪑",
+    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
+    details: {
+      grades: ["IS 2062", "CRCA Sheet"],
+      sizes: "Standard & custom dimensions",
+      applications: ["Office Spaces", "Warehouses", "Factories", "Retail Showrooms"],
+      minOrder: "10 pieces",
+      delivery: "7–14 working days",
+    },
+  },
+  {
+    id: 8,
+    name: "Commercial Building Structures",
+    category: "Commercial Building Structures",
+    description: "Pre-engineered steel structures, factory sheds, warehouse frames and commercial roofing systems.",
+    price: "Get Quote",
+    icon: "🏗️",
+    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80",
+    details: {
+      grades: ["IS 2062 E250", "IS 2062 E350"],
+      sizes: "As per project scope",
+      applications: ["Warehouses", "Factory Sheds", "Commercial Complexes", "Aircraft Hangars"],
+      minOrder: "Project-based",
+      delivery: "As per project schedule",
+    },
+  },
+  {
+    id: 9,
+    name: "SS Railing Systems",
+    category: "SS Railing",
+    description: "Stainless steel 304/316 grade railings for staircases, balconies, and terraces. Mirror/satin finish.",
+    price: "Get Quote",
+    icon: "🔩",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80",
+    details: {
+      grades: ["SS 304", "SS 316", "SS 202"],
+      sizes: "38mm – 76mm dia tubes, custom heights",
+      applications: ["Staircases", "Balconies", "Swimming Pool Edges", "Commercial Interiors"],
+      minOrder: "10 running metres",
+      delivery: "5–10 working days",
+    },
+  },
+  {
+    id: 10,
+    name: "Kitchen Trolleys",
+    category: "Kitchen Trolleys",
+    description: "SS 304 grade commercial kitchen trolleys, work tables and mobile carts for hotels & restaurants.",
+    price: "Get Quote",
+    icon: "🛒",
+    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80",
+    details: {
+      grades: ["SS 304", "SS 316"],
+      sizes: "600×400 to 1800×600mm",
+      applications: ["Hotel Kitchens", "Restaurants", "Catering Facilities", "Food Courts"],
+      minOrder: "5 pieces",
+      delivery: "7–12 working days",
+    },
+  },
+  {
+    id: 11,
+    name: "Hotel Steel Furniture",
+    category: "Hotel Furnitures",
+    description: "Premium powder-coated steel furniture for hotels — beds, wardrobes, luggage racks & lobby chairs.",
+    price: "Get Quote",
+    icon: "🏨",
+    image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80",
+    details: {
+      grades: ["IS 2062", "CRCA", "GP Sheet"],
+      sizes: "As per design specification",
+      applications: ["Hotel Rooms", "Lobbies", "Banquet Halls", "Resorts"],
+      minOrder: "20 pieces",
+      delivery: "10–21 working days",
+    },
+  },
+  {
+    id: 12,
+    name: "Food Processing Machines",
+    category: "Food Processing Machines",
+    description: "FSSAI-compliant SS 316 food-grade processing machines: grinders, conveyor belts, storage tanks.",
+    price: "Get Quote",
+    icon: "⚙️",
+    image: "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600&q=80",
+    details: {
+      grades: ["SS 316L", "SS 304"],
+      sizes: "As per capacity requirements",
+      applications: ["Dairy Plants", "Food Processing Units", "Pharma Plants", "Beverage Industry"],
+      minOrder: "1 unit",
+      delivery: "15–30 working days",
+    },
+  },
+  {
+    id: 13,
+    name: "Park Instruments & Outdoor Structures",
+    category: "Park Instruments",
+    description: "Galvanised steel playground equipment, park benches, outdoor gym instruments & shade structures.",
+    price: "Get Quote",
+    icon: "🌿",
+    image: "https://images.unsplash.com/photo-1575783970733-1aaedde1db74?w=600&q=80",
+    details: {
+      grades: ["IS 2062", "GI Coated"],
+      sizes: "As per IS 15567 playground standards",
+      applications: ["Public Parks", "School Playgrounds", "Housing Societies", "Municipal Areas"],
+      minOrder: "1 set",
+      delivery: "10–20 working days",
     },
   },
 ];
@@ -336,8 +449,7 @@ function ProductModal({ product, onClose }: { product: Product; onClose: () => v
                 <button className="skw-btn-primary" onClick={() => setShowCustomize(true)}>
                   ⚙️ Customize & Order
                 </button>
-                <button className="skw-btn-cart">🛒 Add to Cart</button>
-                <Link to="/contact" className="skw-btn-ghost" onClick={onClose}>Get Quote</Link>
+                <Link to="/contact" className="skw-btn-ghost" onClick={onClose}>📋 Get Quotation</Link>
               </div>
             </div>
           </>
@@ -503,6 +615,7 @@ function ChatBot() {
 
 // ─── Main Home Component ──────────────────────────────────────────────────────
 export default function Home() {
+  const { isAdmin } = useAuth();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const { ref: statsRef, inView: statsInView } = useInView();
@@ -652,7 +765,7 @@ export default function Home() {
           <p className="skw-section-sub">From TMT bars to custom fabrication — every grade, every size, delivered to site.</p>
         </div>
         <div className="skw-products-grid">
-          {PRODUCTS.map((p, i) => (
+          {PRODUCTS.slice(0, 6).map((p, i) => (
             <div key={p.id} className="skw-product-card" style={{ animationDelay: `${i * 0.1}s` }}>
               <div className="skw-product-img-wrap">
                 <img src={p.image} alt={p.name} className="skw-product-img" />
@@ -674,13 +787,6 @@ export default function Home() {
                         <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
                       </svg>
                     </button>
-                    {/* Add to cart */}
-                    <button className="skw-cart-icon-btn" title="Add to Cart">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                        <path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/>
-                      </svg>
-                    </button>
                     {/* Details */}
                     <button className="skw-product-cta" onClick={() => setSelectedProduct(p)}>Details →</button>
                   </div>
@@ -690,11 +796,16 @@ export default function Home() {
           ))}
         </div>
         <div className="skw-products-cta">
-          <Link to="/products" className="skw-btn-primary">View All Products & Customize <span>→</span></Link>
+          <Link to="/products" className="skw-btn-primary skw-btn-view-all">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            View All Products
+            <span>→</span>
+          </Link>
         </div>
       </section>
 
-      {/* ══ PROJECTS ══ */}
+      {/* ══ PROJECTS — Admin only ══ */}
+      {isAdmin && (
       <section className="skw-projects-section">
         <div className="skw-section-header skw-dark-header">
           <div className="skw-section-tag skw-tag-light">Live Projects</div>
@@ -733,6 +844,7 @@ export default function Home() {
           <Link to="/projects" className="skw-btn-outline-light">Explore All Projects on Map</Link>
         </div>
       </section>
+      )}
 
       {/* ══ HOW IT WORKS — Animated Process ══ */}
       <section className="skw-how-section" ref={howRef}>

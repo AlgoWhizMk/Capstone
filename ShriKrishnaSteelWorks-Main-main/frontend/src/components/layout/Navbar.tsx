@@ -11,7 +11,7 @@ const [menuOpen, setMenuOpen] = useState(false);
 const [dropdownOpen, setDropdown] = useState(false);
 const [cartCount] = useState(0);
   const dropdownRef                   = useRef<HTMLDivElement>(null);
-  const { user, profile }             = useAuth();
+  const { user, profile, isAdmin }    = useAuth();
   const navigate                      = useNavigate();
 
   useEffect(() => {
@@ -35,21 +35,28 @@ const [cartCount] = useState(0);
     navigate("/");
   };
 
-  const navLinks = [
+  // Projects is admin-only — hide from guests and regular users
+  const allNavLinks = [
     { to: "/",         label: "Home"     },
     { to: "/about",    label: "About"    },
-    { to: "/projects", label: "Projects" },
     { to: "/products", label: "Products" },
     { to: "/contact",  label: "Contact"  },
+    ...(isAdmin ? [{ to: "/projects", label: "Projects" }] : []),
   ];
+  const navLinks = allNavLinks;
 
   const getInitials = (name: string) =>
     name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   const displayName = profile?.name ?? user?.displayName ?? "User";
 
-  // Dropdown menu items — ONLY these 4
+  // Dropdown menu items
   const dropdownItems = [
+    ...(isAdmin ? [
+      { label: "🛡  Admin Panel", path: "/admin/dashboard" },
+      { label: "📊  Analytics BI", path: "/admin/analytics" },
+      { label: "🧠  AI/ML Lab", path: "/admin/ai-ml" },
+    ] : []),
     { label: "⊞  Dashboard",  path: "/dashboard"           },
     { label: "👤  My Profile", path: "/dashboard#profile"   },
     { label: "⚙  Settings",   path: "/dashboard#settings"  },

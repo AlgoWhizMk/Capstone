@@ -60,4 +60,15 @@ router.put("/:orderId/status", async (req, res) => {
   }
 });
 
+// ── DELETE /api/orders/:id — delete an order (admin only) ────────────────────
+router.delete("/:id", async (req, res) => {
+  try {
+    const order = await Order.findByIdAndDelete(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    res.json({ message: "Order deleted", order });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 export default router;

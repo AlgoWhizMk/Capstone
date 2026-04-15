@@ -36,6 +36,7 @@ const productSchema = new mongoose.Schema({
   productDescription:      String,
   features:                String,
   customizationAvailable:  String,
+  imageUrl:                String,
   leadTimeDays:            Number,
   installationSupport:     String,
   maintenanceRequired:     String,

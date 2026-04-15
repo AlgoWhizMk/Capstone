@@ -1,1244 +1,1002 @@
-// src/pages/UserDashboard.tsx
+// src/pages/UserDashboard.tsx — Professional SaaS Dashboard
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation }    from "react-router-dom";
-import { useAuth }                     from "../context/AuthContext";
-import { logOut }                      from "../services/firebase";
-import {
-  getUser, getUserOrders, updateUser,
-} from "../services/api";
-import type {
-  MongoUser, MongoOrder,
-} from "../services/api";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { logOut } from "../services/firebase";
+import { getUser, getUserOrders, updateUser } from "../services/api";
+import type { MongoUser, MongoOrder } from "../services/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type Tab = "overview" | "orders" | "projects" | "profile" | "settings";
-
-type EditProfileForm = {
-  name: string;
-  phone: string;
-  company: string;
-  street: string;
-  city: string;
-  state: string;
-  pincode: string;
+type Tab = "overview" | "orders" | "quotations" | "profile" | "settings";
+type EditForm = {
+  name: string; phone: string; company: string;
+  street: string; city: string; state: string; pincode: string;
 };
 
-type DashboardSettings = {
-  emailNotify: boolean;
-  smsNotify: boolean;
-  orderUpdates: boolean;
-  newsletter: boolean;
-  twoFactor: boolean;
+const S: Record<string, { color: string; bg: string; border: string; label: string }> = {
+  Delivered:  { color:"#22C55E", bg:"#052814", border:"#16502e", label:"Delivered"  },
+  Processing: { color:"#60A5FA", bg:"#061728", border:"#1a4166", label:"Processing" },
+  Shipped:    { color:"#A78BFA", bg:"#130c26", border:"#3b2d6e", label:"Shipped"    },
+  Pending:    { color:"#F59E0B", bg:"#1a1105", border:"#5a3d08", label:"Pending"    },
+  Cancelled:  { color:"#6B7280", bg:"#111318", border:"#2d3139", label:"Cancelled"  },
 };
 
-type NotifyToggleKey = "emailNotify" | "smsNotify" | "orderUpdates" | "newsletter";
+const STAGES = [
+  { label:"Placed",     icon:"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
+  { label:"Confirmed",  icon:"M5 13l4 4L19 7" },
+  { label:"Processing", icon:"M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
+  { label:"Ready",      icon:"M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" },
+  { label:"Shipped",    icon:"M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2L19 8m-9 4v5m4-5v5" },
+  { label:"Delivered",  icon:"M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" },
+];
 
-interface Project {
-  id: string;
-  title: string;
-  type: "standard" | "customized";
-  status: "ongoing" | "completed" | "planning";
-  description: string;
-  location: string;
-  startDate: string;
-  completedDate?: string;
-  value: string;
-  progress: number;
-  customDetails?: {
-    specifications: string;
-    materials: string;
-    agreedTerms: string;
-    ownerNotes: string;
-  };
-  image?: string;
-}
+const STAGE_IDX: Record<string, number> = {
+  Pending:0, Processing:2, Shipped:4, Delivered:5, Cancelled:-1,
+};
 
-// ─── Mock projects (replace with MongoDB later) ───────────────────────────────
-const MOCK_PROJECTS: Project[] = [
+const MOCK_QUOTES = [
+  { id:"QT-2025-001", product:"TMT Steel Bars Fe-500 (12mm) — 5 MT Bulk Order", qty:"5 MT",   date:"Mar 10, 2025", status:"Approved", amount:"₹2,10,000" },
+  { id:"QT-2025-002", product:"Custom MS Sliding Gate (14×7 ft) with Decorative Grill",    qty:"1 unit",  date:"Mar 22, 2025", status:"Pending",  amount:"Awaiting"  },
+  { id:"QT-2025-003", product:"SS 304 Balcony Railing — 30 Running Metres",       qty:"30 RMT", date:"Apr 01, 2025", status:"Review",   amount:"₹54,000"   },
+  { id:"QT-2025-004", product:"Pre-Engineered Steel Warehouse Structure (3000 sqft)", qty:"1 project", date:"Apr 08, 2025", status:"Approved", amount:"₹9,40,000" },
+];
+const QS: Record<string, { color:string; bg:string; border:string }> = {
+  Approved: { color:"#22C55E", bg:"#052814", border:"#16502e" },
+  Pending:  { color:"#F59E0B", bg:"#1a1105", border:"#5a3d08" },
+  Review:   { color:"#60A5FA", bg:"#061728", border:"#1a4166" },
+  Rejected: { color:"#F87171", bg:"#1a0808", border:"#5a2020" },
+};
+
+// ── Mock Orders (demo data — shown alongside real DB orders) ─────────────────
+const MOCK_ORDERS: MongoOrder[] = [
   {
-    id: "PRJ-001",
-    title: "Industrial Warehouse Steel Framework",
-    type: "customized",
-    status: "completed",
-    description: "Custom heavy-duty steel framework for 5000 sq ft warehouse",
-    location: "Butibori MIDC, Nagpur",
-    startDate: "2024-09-01",
-    completedDate: "2025-01-15",
-    value: "₹18,50,000",
-    progress: 100,
-    customDetails: {
-      specifications: "IS:2062 Grade A steel, 8mm thickness, hot-dip galvanized",
-      materials: "TMT Fe-500, MS Channels 150x75, Roof Purlins Z-200",
-      agreedTerms: "Design + supply + installation. Payment: 40% advance, 60% on completion",
-      ownerNotes: "Client requested extra wind bracing on north side. Completed ahead of schedule.",
-    },
+    _id:"mock-001", orderId:"SKW-2025-001", status:"Delivered",
+    product:"TMT Steel Bar Fe-500 (12mm) — 3 MT",
+    amount:"₹1,26,000", quantity:"3 MT",
+    notes:"Delivered to MIDC warehouse, all bars inspected",
+    isCustomized:false,
+    deliveryAddress:{ street:"Plot 12, MIDC", city:"Nagpur", state:"Maharashtra", pincode:"440016" },
+    createdAt:"2025-01-20T10:30:00Z",
   },
   {
-    id: "PRJ-002",
-    title: "Residential Gate & Grill Work",
-    type: "customized",
-    status: "ongoing",
-    description: "Decorative MS gate with artistic grill pattern for bungalow",
-    location: "Dharampeth, Nagpur",
-    startDate: "2025-02-10",
-    value: "₹2,20,000",
-    progress: 65,
-    customDetails: {
-      specifications: "MS Square Pipe 40x40, Ornamental Design, Powder coated matte black",
-      materials: "MS Square Pipe, Flat Bar, Decorative Scrolls",
-      agreedTerms: "Design approval → fabrication → installation. 50% advance paid.",
-      ownerNotes: "Design finalized on 12 Feb 2025. Client approved 3D mockup.",
-    },
+    _id:"mock-002", orderId:"SKW-2025-002", status:"Shipped",
+    product:"MS Square Hollow Section Pipe (40×40mm, 3mm)",
+    amount:"₹38,500", quantity:"50 pcs",
+    notes:"Dispatched via company vehicle, ETA 2 days",
+    isCustomized:false,
+    deliveryAddress:{ street:"Survey No. 48", city:"Wardha", state:"Maharashtra", pincode:"442001" },
+    createdAt:"2025-02-14T09:15:00Z",
   },
   {
-    id: "PRJ-003",
-    title: "Factory Mezzanine Floor",
-    type: "standard",
-    status: "planning",
-    description: "Standard mezzanine floor structure for storage expansion",
-    location: "Hingna Road, Nagpur",
-    startDate: "2025-03-20",
-    value: "₹6,80,000",
-    progress: 15,
+    _id:"mock-003", orderId:"SKW-2025-003", status:"Processing",
+    product:"Custom SS 304 Staircase Railing — 18 RMT",
+    amount:"₹54,000", quantity:"18 RMT",
+    notes:"Design approved. Fabrication in progress at workshop.",
+    isCustomized:true,
+    deliveryAddress:{ street:"Dharampeth Extension", city:"Nagpur", state:"Maharashtra", pincode:"440010" },
+    createdAt:"2025-03-05T11:00:00Z",
+  },
+  {
+    _id:"mock-004", orderId:"SKW-2025-004", status:"Pending",
+    product:"MS Angle Iron 50×50×6mm — 2 MT",
+    amount:"₹82,000", quantity:"2 MT",
+    notes:"Awaiting payment confirmation",
+    isCustomized:false,
+    deliveryAddress:{ street:"Hingna Road", city:"Nagpur", state:"Maharashtra", pincode:"440019" },
+    createdAt:"2025-04-01T08:00:00Z",
+  },
+  {
+    _id:"mock-005", orderId:"SKW-2024-089", status:"Delivered",
+    product:"Pre-fab Industrial Shed Purlin Set (C-150)",
+    amount:"₹2,35,000", quantity:"1 set",
+    notes:"Complete purlin set with bolts. Site installation included.",
+    isCustomized:true,
+    deliveryAddress:{ street:"Butibori MIDC", city:"Nagpur", state:"Maharashtra", pincode:"441108" },
+    createdAt:"2024-11-28T14:00:00Z",
   },
 ];
 
-const ORDER_STAGES = [
-  { key: "placed",       label: "Order Placed",      icon: "📋" },
-  { key: "preparing",    label: "Preparing",          icon: "⚙️" },
-  { key: "midway",       label: "In Progress",        icon: "🔧" },
-  { key: "finishing",    label: "Finishing",          icon: "✨" },
-  { key: "ready",        label: "Ready",              icon: "📦" },
-  { key: "out_delivery", label: "Out for Delivery",   icon: "🚚" },
-  { key: "delivered",    label: "Delivered",          icon: "✅" },
-];
-
-const STATUS_TO_STAGE: Record<string, number> = {
-  Pending:    0,
-  Processing: 2,
-  Shipped:    5,
-  Delivered:  6,
-  Cancelled:  -1,
+// ── Mock profile (shown when backend is offline) ──────────────────────────────
+const MOCK_PROFILE = {
+  name:"Rajesh Sharma", email:"rajesh@abcconstructions.com", phone:"+91 98765 43210",
+  company:"ABC Constructions Pvt. Ltd.",
+  address:{ street:"Plot 12, MIDC Industrial Area", city:"Nagpur", state:"Maharashtra", pincode:"440016" },
+  photoURL:"",
 };
 
-const STATUS_COLORS: Record<string, { bg: string; color: string; dot: string }> = {
-  Delivered:  { bg: "rgba(74,222,128,0.12)",  color: "#4ADE80", dot: "#4ADE80"  },
-  Processing: { bg: "rgba(251,191,36,0.12)",  color: "#FBbF24", dot: "#FBbF24"  },
-  Shipped:    { bg: "rgba(96,165,250,0.12)",  color: "#60A5FA", dot: "#60A5FA"  },
-  Pending:    { bg: "rgba(248,113,113,0.12)", color: "#F87171", dot: "#F87171"  },
-  Cancelled:  { bg: "rgba(156,163,175,0.12)", color: "#9CA3AF", dot: "#9CA3AF"  },
-};
-
-// ─── Keyframe injection ───────────────────────────────────────────────────────
+// ── CSS ─────────────────────────────────────────────────────────────────────
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-  @keyframes fadeUp   { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
-  @keyframes shimmer  { 0%,100% { opacity:.4; } 50% { opacity:1; } }
-  @keyframes spin     { to { transform:rotate(360deg); } }
-  @keyframes pulse    { 0%,100% { transform:scale(1); } 50% { transform:scale(1.05); } }
-  @keyframes slideIn  { from { transform:translateX(40px); opacity:0; } to { transform:translateX(0); opacity:1; } }
-  @keyframes progressFill { from { width:0; } to { width:var(--w); } }
-  @keyframes stageGlow { 0%,100%{box-shadow:0 0 8px rgba(212,160,23,.4)} 50%{box-shadow:0 0 20px rgba(212,160,23,.8)} }
-  @keyframes trackFill { from{width:0} to{width:var(--pct)} }
+  @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+  @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+  @keyframes spin     { to{transform:rotate(360deg)} }
+  @keyframes slideIn  { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:none} }
+  @keyframes barFill  { from{width:0} to{width:var(--w)} }
+  @keyframes pulse2   { 0%,100%{opacity:1} 50%{opacity:.5} }
 
-  * { box-sizing:border-box; margin:0; padding:0; }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 
-  .dash-page { font-family:'DM Sans',sans-serif; min-height:100vh; background:#080c08;
-    padding-top:80px; color:#e8e8e8; position:relative; overflow-x:hidden; }
-
-  .dash-bg-grid {
-    position:fixed; inset:0; pointer-events:none; z-index:0;
-    background-image:
-      linear-gradient(rgba(212,160,23,.025) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(212,160,23,.025) 1px,transparent 1px);
-    background-size:48px 48px;
-  }
-  .dash-bg-orb1 {
-    position:fixed; top:-200px; left:-200px; width:600px; height:600px; border-radius:50%;
-    background:radial-gradient(circle,rgba(212,160,23,.07) 0%,transparent 70%);
-    pointer-events:none; z-index:0;
-  }
-  .dash-bg-orb2 {
-    position:fixed; bottom:-200px; right:-200px; width:500px; height:500px; border-radius:50%;
-    background:radial-gradient(circle,rgba(74,144,217,.05) 0%,transparent 70%);
-    pointer-events:none; z-index:0;
+  .ud {
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    background:#080C14;
+    color:#CBD5E1;
+    padding-top:72px;
+    font-size:14px;
+    line-height:1.6;
   }
 
-  .dash-layout { display:flex; gap:28px; max-width:1380px; margin:0 auto; padding:32px 24px; position:relative; z-index:1; }
-
-  /* ── Sidebar ── */
-  .sidebar { width:268px; flex-shrink:0; display:flex; flex-direction:column; gap:14px; animation:fadeUp .5s ease both; }
-
-  .side-profile-card {
-    background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
-    border:1px solid rgba(255,255,255,.08); border-radius:20px; padding:28px 20px 22px;
-    text-align:center; position:relative; overflow:hidden;
-  }
-  .side-profile-card::before {
-    content:''; position:absolute; top:0; left:0; right:0; height:3px;
-    background:linear-gradient(90deg,#d4a017,#f0c040,#d4a017);
-    background-size:200% 100%; animation:shimmer 3s infinite;
+  /* ─ Layout ─ */
+  .ud-wrap {
+    display:grid;
+    grid-template-columns:232px 1fr;
+    max-width:1300px;
+    margin:0 auto;
+    padding:32px 20px 64px;
+    gap:24px;
+    align-items:start;
   }
 
-  .avatar-ring {
-    width:80px; height:80px; border-radius:50%; margin:0 auto 14px;
-    background:linear-gradient(135deg,#d4a017,#b8860b,#f0c040);
-    padding:2px; position:relative;
-  }
-  .avatar-ring img, .avatar-ring .avatar-fallback {
-    width:100%; height:100%; border-radius:50%; object-fit:cover;
-    background:linear-gradient(135deg,#1a2a1a,#0d160d);
-  }
-  .avatar-fallback { display:flex; align-items:center; justify-content:center;
-    font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:#d4a017; }
-  .avatar-online { position:absolute; bottom:4px; right:4px; width:14px; height:14px;
-    border-radius:50%; background:#4ADE80; border:2.5px solid #080c08; }
+  /* ─ Sidebar ─ */
+  .ud-side { display:flex; flex-direction:column; gap:6px; position:sticky; top:90px; }
 
-  .side-name { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; }
-  .side-email { font-size:11px; color:#666; margin-bottom:10px; word-break:break-all; }
-  .side-role  { display:inline-flex; align-items:center; gap:5px;
-    background:rgba(212,160,23,.12); border:1px solid rgba(212,160,23,.25);
-    color:#d4a017; border-radius:999px; padding:3px 12px; font-size:11px; font-weight:600; }
-
-  .side-nav { display:flex; flex-direction:column; gap:3px; }
-  .side-nav-btn {
-    display:flex; align-items:center; gap:11px; padding:12px 15px; border-radius:12px;
-    background:transparent; border:1px solid transparent; color:#666; font-size:13.5px;
-    font-weight:500; cursor:pointer; text-align:left; position:relative; overflow:hidden;
-    transition:all .2s; font-family:'DM Sans',sans-serif;
+  .ud-side-profile {
+    padding:20px 16px 16px;
+    margin-bottom:8px;
   }
-  .side-nav-btn:hover { background:rgba(255,255,255,.04); color:#aaa; }
-  .side-nav-btn.active { background:rgba(212,160,23,.1); border-color:rgba(212,160,23,.2); color:#d4a017; }
-  .side-nav-btn.active::before { content:''; position:absolute; left:0; top:20%; height:60%;
-    width:3px; background:#d4a017; border-radius:0 3px 3px 0; }
-  .side-nav-icon { font-size:16px; width:20px; text-align:center; }
-  .side-badge { margin-left:auto; background:#d4a017; color:#000; border-radius:999px;
-    padding:1px 7px; font-size:10px; font-weight:700; }
-
-  .side-logout {
-    display:flex; align-items:center; gap:10px; padding:12px 15px; border-radius:12px;
-    background:rgba(248,113,113,.06); border:1px solid rgba(248,113,113,.15);
-    color:#F87171; font-size:13.5px; font-weight:500; cursor:pointer;
-    transition:all .2s; font-family:'DM Sans',sans-serif; margin-top:4px;
+  .ud-avatar-wrap {
+    width:52px; height:52px; border-radius:14px;
+    background:linear-gradient(135deg,#1e3a5f,#2563eb22);
+    border:1px solid #1e3a5f;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:18px; color:#60A5FA;
+    overflow:hidden; margin-bottom:10px;
   }
-  .side-logout:hover { background:rgba(248,113,113,.12); }
-
-  /* ── Main content ── */
-  .dash-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:22px; }
-
-  .dash-header { animation:fadeUp .5s .1s ease both; }
-  .dash-title { font-family:'Syne',sans-serif; font-size:28px; font-weight:800;
-    color:#fff; margin-bottom:5px; }
-  .dash-sub { font-size:13.5px; color:#666; }
-
-  /* ── Cards ── */
-  .glass-card {
-    background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
-    border:1px solid rgba(255,255,255,.07); border-radius:18px; padding:24px;
-    animation:fadeUp .5s .2s ease both;
+  .ud-avatar-wrap img { width:100%; height:100%; object-fit:cover; }
+  .ud-side-name  { font-weight:600; font-size:14px; color:#F1F5F9; margin-bottom:2px; }
+  .ud-side-email { font-size:11px; color:#475569; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ud-side-chip  {
+    display:inline-flex; align-items:center; gap:5px; margin-top:8px;
+    background:#0D1B2E; border:1px solid #1e3a5f;
+    color:#60A5FA; border-radius:6px; padding:3px 10px; font-size:11px; font-weight:500;
   }
-  .card-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700;
-    color:#fff; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
 
-  /* ── Stats grid ── */
-  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; animation:fadeUp .5s .15s ease both; }
-  .stat-card {
-    background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
-    border:1px solid rgba(255,255,255,.07); border-radius:16px; padding:20px;
-    display:flex; align-items:center; gap:14px; cursor:default;
-    transition:transform .2s, border-color .2s;
+  .ud-nav-sep { height:1px; background:#131B2E; margin:4px 0 8px; }
+  .ud-nav-label {
+    font-size:10px; font-weight:600; color:#334155; letter-spacing:.08em;
+    text-transform:uppercase; padding:0 12px; margin-bottom:4px;
   }
-  .stat-card:hover { transform:translateY(-2px); border-color:rgba(212,160,23,.2); }
-  .stat-icon { width:48px; height:48px; border-radius:13px;
-    display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
-  .stat-val { font-family:'Syne',sans-serif; font-size:23px; font-weight:800; margin-bottom:2px; }
-  .stat-lbl { font-size:12px; color:#666; }
 
-  /* ── Product cards (Amazon-style) ── */
-  .products-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:18px; }
-  .product-card {
-    background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
-    border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden;
-    transition:transform .25s, box-shadow .25s, border-color .25s; cursor:pointer;
+  .ud-nav-btn {
+    display:flex; align-items:center; gap:10px;
+    padding:9px 12px; border-radius:8px;
+    background:transparent; border:none;
+    color:#64748B; font-size:13.5px; font-weight:500;
+    cursor:pointer; text-align:left; width:100%;
+    transition:background .15s, color .15s;
+    font-family:'Inter',sans-serif;
+    position:relative;
   }
-  .product-card:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.4);
-    border-color:rgba(212,160,23,.3); }
-  .product-img-wrap { height:160px; background:linear-gradient(135deg,#1a1a2e,#16213e);
-    display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-  .product-img-wrap img { width:100%; height:100%; object-fit:cover; }
-  .product-img-placeholder { font-size:48px; opacity:.4; }
-  .product-status-pill {
-    position:absolute; top:10px; right:10px; padding:3px 10px; border-radius:999px;
-    font-size:10px; font-weight:700; backdrop-filter:blur(8px);
+  .ud-nav-btn:hover { background:#0D1420; color:#94A3B8; }
+  .ud-nav-btn.on {
+    background:#0D1B2E; color:#60A5FA;
+    border-left: 2px solid #2563EB;
+    padding-left:10px;
   }
-  .product-body { padding:14px; }
-  .product-name { font-size:13px; font-weight:600; color:#e8e8e8; margin-bottom:6px;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  .product-meta { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-  .product-price { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:#d4a017; }
-  .product-date  { font-size:11px; color:#666; }
-  .product-actions { display:flex; gap:8px; }
-  .product-btn {
-    flex:1; padding:8px; border-radius:8px; font-size:11px; font-weight:600;
-    cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; border:none;
+  .ud-nav-icon {
+    width:30px; height:30px; border-radius:7px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
-  .product-btn-primary { background:rgba(212,160,23,.15); color:#d4a017; border:1px solid rgba(212,160,23,.25); }
-  .product-btn-primary:hover { background:rgba(212,160,23,.25); }
-  .product-btn-outline { background:rgba(255,255,255,.05); color:#888; border:1px solid rgba(255,255,255,.1); }
-  .product-btn-outline:hover { background:rgba(255,255,255,.1); color:#ccc; }
+  .ud-nav-btn.on .ud-nav-icon { background:#1e3a5f22; }
+  .ud-nav-badge {
+    margin-left:auto; background:#1e3050; color:#60A5FA;
+    border-radius:5px; padding:1px 7px; font-size:10px; font-weight:600;
+    border:1px solid #1e3a5f;
+  }
 
-  /* ── Order tracker ── */
-  .order-list { display:flex; flex-direction:column; gap:16px; }
-  .order-item {
-    background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
-    border:1px solid rgba(255,255,255,.07); border-radius:16px; overflow:hidden;
+  .ud-quick-link {
+    display:flex; align-items:center; gap:9px;
+    padding:8px 12px; border-radius:8px; color:#475569;
+    text-decoration:none; font-size:13px; font-weight:500;
+    transition:background .15s, color .15s;
+  }
+  .ud-quick-link:hover { background:#0D1420; color:#94A3B8; }
+
+  .ud-logout-btn {
+    display:flex; align-items:center; gap:9px; padding:9px 12px;
+    border-radius:8px; color:#EF4444; font-size:13px; font-weight:500;
+    background:transparent; border:none; cursor:pointer; width:100%; text-align:left;
+    transition:background .15s; font-family:'Inter',sans-serif; margin-top:4px;
+  }
+  .ud-logout-btn:hover { background:#1a0a0a; }
+
+  /* ─ Main ─ */
+  .ud-main { display:flex; flex-direction:column; gap:20px; min-width:0; }
+
+  /* Page heading */
+  .ud-ph { animation:fadeUp .35s ease both; }
+  .ud-ph-title { font-size:22px; font-weight:700; color:#F1F5F9; margin-bottom:3px; letter-spacing:-.3px; }
+  .ud-ph-sub   { font-size:13px; color:#475569; }
+
+  /* Card */
+  .ud-card {
+    background:#0C1221;
+    border:1px solid #131E35;
+    border-radius:14px;
+    padding:22px;
+    animation:fadeUp .35s ease both;
+  }
+  .ud-card-title {
+    font-size:13px; font-weight:600; color:#94A3B8;
+    text-transform:uppercase; letter-spacing:.06em;
+    margin-bottom:18px; display:flex; align-items:center; gap:8px;
+  }
+  .ud-card-title-action {
+    margin-left:auto; font-size:12px; font-weight:600; color:#3B82F6;
+    background:none; border:none; cursor:pointer; font-family:'Inter',sans-serif;
+    text-transform:none; letter-spacing:0; transition:color .15s;
+  }
+  .ud-card-title-action:hover { color:#60A5FA; }
+
+  /* ─ Stat cards ─ */
+  .ud-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; animation:fadeUp .3s ease both; }
+  .ud-stat {
+    background:#0C1221; border:1px solid #131E35; border-radius:14px;
+    padding:20px; transition:border-color .2s, transform .2s; cursor:default;
+  }
+  .ud-stat:hover { border-color:#1e3a5f; transform:translateY(-2px); }
+  .ud-stat-icon {
+    width:38px; height:38px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; margin-bottom:14px;
+  }
+  .ud-stat-val   { font-size:26px; font-weight:700; color:#F1F5F9; letter-spacing:-.5px; line-height:1; }
+  .ud-stat-label { font-size:12px; color:#475569; margin-top:4px; }
+
+  /* ─ Activity list ─ */
+  .ud-activity { display:flex; flex-direction:column; }
+  .ud-act-row {
+    display:flex; align-items:flex-start; gap:12px; padding:13px 0;
+    border-bottom:1px solid #0F1729;
+  }
+  .ud-act-row:last-child { border-bottom:none; }
+  .ud-act-dot {
+    width:34px; height:34px; border-radius:9px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ud-act-body { flex:1; min-width:0; }
+  .ud-act-title { font-size:13.5px; font-weight:500; color:#CBD5E1; margin-bottom:2px; }
+  .ud-act-time  { font-size:11.5px; color:#475569; }
+
+  /* ─ Banner / CTA ─ */
+  .ud-banner {
+    background:linear-gradient(135deg,#0D1B2E,#0a1525);
+    border:1px solid #1e3a5f; border-radius:14px;
+    padding:20px 22px;
+    display:flex; align-items:center; gap:16px;
+    animation:fadeUp .35s ease both;
+  }
+  .ud-banner-icon { font-size:28px; flex-shrink:0; }
+  .ud-banner-text { flex:1; }
+  .ud-banner-title { font-size:15px; font-weight:600; color:#F1F5F9; margin-bottom:3px; }
+  .ud-banner-desc  { font-size:12.5px; color:#4B6080; }
+  .ud-banner-btn {
+    background:#2563EB; color:#fff; border:none;
+    padding:9px 20px; border-radius:8px; font-size:13px; font-weight:600;
+    cursor:pointer; white-space:nowrap; text-decoration:none;
+    display:inline-block; transition:background .15s; font-family:'Inter',sans-serif;
+  }
+  .ud-banner-btn:hover { background:#1D4ED8; }
+
+  /* ─ Order list ─ */
+  .ud-ord-list { display:flex; flex-direction:column; gap:10px; }
+  .ud-ord {
+    background:#080D18; border:1px solid #131E35; border-radius:12px;
+    overflow:hidden; transition:border-color .2s;
+  }
+  .ud-ord:hover { border-color:#1e3a5f; }
+  .ud-ord-hd {
+    display:flex; align-items:center; gap:12px;
+    padding:14px 16px; cursor:pointer;
+  }
+  .ud-ord-ico {
+    width:44px; height:44px; border-radius:10px;
+    background:#0D1421; border:1px solid #131E35;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .ud-ord-info { flex:1; min-width:0; }
+  .ud-ord-name { font-size:13.5px; font-weight:600; color:#E2E8F0; margin-bottom:3px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ud-ord-meta { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .ud-ord-id   { font-size:11px; color:#334155; font-family:monospace; }
+  .ud-ord-amt  { font-size:12px; font-weight:600; color:#60A5FA; }
+  .ud-ord-date { font-size:11px; color:#334155; }
+  .ud-status-pill {
+    font-size:10.5px; font-weight:600; padding:3px 10px; border-radius:6px; border:1px solid; flex-shrink:0;
+  }
+  .ud-chevron { color:#2D3F55; font-size:18px; transition:transform .25s; flex-shrink:0; }
+  .ud-chevron.open { transform:rotate(90deg); }
+
+  /* Order expanded */
+  .ud-ord-body { padding:0 16px 18px; border-top:1px solid #0F1729; }
+  .ud-tracker { padding-top:18px; }
+  .ud-tracker-lbl { font-size:11px; font-weight:600; color:#334155; text-transform:uppercase; letter-spacing:.07em; margin-bottom:14px; }
+  .ud-stages { display:flex; overflow-x:auto; padding-bottom:4px; }
+  .ud-stage  { display:flex; flex-direction:column; align-items:center; flex:1; min-width:80px; position:relative; }
+  .ud-stage:not(:last-child)::after {
+    content:''; position:absolute; top:14px; left:50%; width:100%; height:2px;
+    background:#131E35; z-index:0;
+  }
+  .ud-stage.done:not(:last-child)::after { background:#1D4ED8; }
+  .ud-stage-dot {
+    width:28px; height:28px; border-radius:50%; z-index:1; position:relative;
+    border:2px solid #131E35; background:#080D18;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .3s;
+  }
+  .ud-stage.done .ud-stage-dot  { background:#2563EB; border-color:#2563EB; }
+  .ud-stage.cur  .ud-stage-dot  { background:#0D1B2E; border-color:#3B82F6; animation:pulse2 1.5s infinite; }
+  .ud-stage-lbl { font-size:10px; color:#334155; margin-top:5px; text-align:center; }
+  .ud-stage.done .ud-stage-lbl,
+  .ud-stage.cur  .ud-stage-lbl  { color:#60A5FA; }
+
+  .ud-ord-chips { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; }
+  .ud-chip { background:#080D18; border:1px solid #0F1729; border-radius:9px; padding:10px 12px; }
+  .ud-chip-lbl { font-size:10px; color:#334155; text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
+  .ud-chip-val { font-size:13px; color:#CBD5E1; font-weight:500; }
+
+  /* ─ Quotations ─ */
+  .ud-quotes { display:flex; flex-direction:column; gap:8px; }
+  .ud-quote-row {
+    background:#080D18; border:1px solid #131E35; border-radius:11px;
+    padding:14px 16px; display:flex; align-items:center; gap:13px;
     transition:border-color .2s;
   }
-  .order-item:hover { border-color:rgba(212,160,23,.2); }
-  .order-header { padding:16px 20px; display:flex; align-items:center; gap:14px; cursor:pointer; }
-  .order-thumb { width:60px; height:60px; border-radius:10px; background:#1a1a2e;
-    display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; overflow:hidden; }
-  .order-thumb img { width:100%; height:100%; object-fit:cover; }
-  .order-info { flex:1; min-width:0; }
-  .order-product { font-size:13.5px; font-weight:600; color:#e8e8e8; margin-bottom:4px;
+  .ud-quote-row:hover { border-color:#1e3a5f; }
+  .ud-quote-ico { width:40px; height:40px; border-radius:10px; background:#0D1421;
+    border:1px solid #131E35; display:flex; align-items:center; justify-content:center;
+    font-size:18px; flex-shrink:0; }
+  .ud-quote-info { flex:1; min-width:0; }
+  .ud-quote-name { font-size:13.5px; font-weight:500; color:#E2E8F0; margin-bottom:3px;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .order-meta-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .order-id { font-size:11px; color:#666; font-family:monospace; }
-  .order-price { font-size:12px; font-weight:700; color:#d4a017; }
-  .order-date  { font-size:11px; color:#666; }
-  .order-chevron { color:#444; font-size:18px; transition:transform .3s; flex-shrink:0; }
-  .order-chevron.open { transform:rotate(180deg); }
-  .customized-tag { font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px;
-    background:rgba(168,85,247,.15); color:#a855f7; border:1px solid rgba(168,85,247,.25); }
+  .ud-quote-meta { font-size:11.5px; color:#334155; }
+  .ud-quote-right { text-align:right; flex-shrink:0; }
+  .ud-quote-amt  { font-size:13.5px; font-weight:600; color:#F1F5F9; margin-bottom:6px; }
 
-  /* Progress tracker */
-  .order-expanded { padding:0 20px 20px; border-top:1px solid rgba(255,255,255,.05); }
-  .tracker-wrap { padding-top:20px; }
-  .tracker-title { font-size:12px; font-weight:600; color:#888; text-transform:uppercase;
-    letter-spacing:.08em; margin-bottom:16px; }
-  .tracker-stages { display:flex; align-items:flex-start; gap:0; overflow-x:auto;
-    padding-bottom:8px; }
-  .tracker-stage { display:flex; flex-direction:column; align-items:center;
-    flex:1; min-width:70px; position:relative; }
-  .tracker-stage:not(:last-child)::after {
-    content:''; position:absolute; top:16px; left:50%; width:100%; height:2px;
-    background:rgba(255,255,255,.08); z-index:0;
+  /* ─ Profile ─ */
+  .ud-prof-grid { display:grid; grid-template-columns:280px 1fr; gap:18px; }
+  .ud-prof-left {
+    background:#0C1221; border:1px solid #131E35; border-radius:14px; padding:24px;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
   }
-  .tracker-stage.done:not(:last-child)::after { background:linear-gradient(90deg,#d4a017,rgba(212,160,23,.3)); }
-  .tracker-dot {
-    width:32px; height:32px; border-radius:50%; border:2px solid rgba(255,255,255,.1);
-    background:#111; display:flex; align-items:center; justify-content:center;
-    font-size:13px; z-index:1; position:relative; transition:all .3s;
-  }
-  .tracker-stage.done .tracker-dot {
-    background:linear-gradient(135deg,#d4a017,#b8860b);
-    border-color:#d4a017; animation:stageGlow 2s infinite;
-  }
-  .tracker-stage.current .tracker-dot {
-    background:rgba(212,160,23,.2); border-color:#d4a017; animation:stageGlow 1.5s infinite;
-  }
-  .tracker-label { font-size:10px; color:#666; margin-top:6px; text-align:center; line-height:1.3; }
-  .tracker-stage.done .tracker-label, .tracker-stage.current .tracker-label { color:#d4a017; }
-
-  .order-details-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
-  .detail-chip { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);
-    border-radius:10px; padding:12px; }
-  .detail-chip-label { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
-  .detail-chip-value { font-size:13px; color:#e8e8e8; font-weight:500; }
-
-  .customized-details-box {
-    margin-top:14px; background:rgba(168,85,247,.05); border:1px solid rgba(168,85,247,.15);
-    border-radius:12px; padding:16px;
-  }
-  .custom-box-title { font-size:12px; font-weight:700; color:#a855f7; margin-bottom:10px;
-    display:flex; align-items:center; gap:6px; }
-  .custom-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .custom-field { background:rgba(168,85,247,.05); border-radius:8px; padding:10px; }
-  .custom-field-label { font-size:10px; color:#888; margin-bottom:3px; }
-  .custom-field-value { font-size:12px; color:#d4b8f0; line-height:1.4; }
-
-  /* ── Projects ── */
-  .projects-grid { display:flex; flex-direction:column; gap:16px; }
-  .project-card {
-    background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
-    border:1px solid rgba(255,255,255,.07); border-radius:18px; overflow:hidden;
-    transition:border-color .2s, transform .2s;
-  }
-  .project-card:hover { border-color:rgba(212,160,23,.2); transform:translateX(4px); }
-  .project-top { padding:20px 22px 16px; display:flex; align-items:flex-start; gap:14px; }
-  .project-icon-wrap { width:52px; height:52px; border-radius:14px; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center; font-size:24px; }
-  .project-name { font-family:'Syne',sans-serif; font-size:16px; font-weight:700;
-    color:#fff; margin-bottom:5px; }
-  .project-desc { font-size:13px; color:#888; margin-bottom:8px; }
-  .project-tags { display:flex; gap:8px; flex-wrap:wrap; }
-  .project-tag { font-size:10px; font-weight:600; padding:3px 10px; border-radius:999px; }
-  .project-meta { padding:0 22px 16px; display:flex; gap:20px; flex-wrap:wrap; }
-  .project-meta-item { font-size:12px; color:#666; display:flex; align-items:center; gap:5px; }
-  .project-progress-wrap { padding:0 22px 20px; }
-  .project-progress-label { display:flex; justify-content:space-between;
-    font-size:11px; color:#888; margin-bottom:6px; }
-  .project-progress-bar { height:6px; background:rgba(255,255,255,.07); border-radius:999px; overflow:hidden; }
-  .project-progress-fill { height:100%; border-radius:999px; --w:0%;
-    animation:progressFill 1.2s .4s ease both; width:var(--w); }
-  .project-custom-section { padding:0 22px 20px; }
-
-  /* ── Profile ── */
-  .profile-layout { display:grid; grid-template-columns:1fr 1.4fr; gap:18px; }
-  .profile-card {
-    background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
-    border:1px solid rgba(255,255,255,.07); border-radius:18px; padding:24px;
-  }
-  .profile-avatar-big { width:100px; height:100px; border-radius:50%; margin:0 auto 14px;
-    background:linear-gradient(135deg,#d4a017,#b8860b); padding:2px; }
-  .profile-avatar-big img, .profile-avatar-big .avatar-big-fb {
-    width:100%; height:100%; border-radius:50%; object-fit:cover;
-    background:linear-gradient(135deg,#1a2a1a,#0d160d);
+  .ud-prof-avatar {
+    width:80px; height:80px; border-radius:18px;
+    background:linear-gradient(135deg,#1e3a5f,#0d1b2e); border:1px solid #1e3a5f;
     display:flex; align-items:center; justify-content:center;
-    font-family:'Syne',sans-serif; font-size:32px; font-weight:800; color:#d4a017;
+    font-size:28px; font-weight:700; color:#60A5FA;
+    overflow:hidden; margin:0 auto 14px;
   }
-  .profile-fields-grid { display:flex; flex-direction:column; gap:10px; }
-  .pf-item { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);
-    border-radius:10px; padding:12px 14px; display:flex; align-items:center; gap:10px; }
-  .pf-icon { font-size:18px; width:24px; text-align:center; }
-  .pf-label { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.06em; margin-bottom:2px; }
-  .pf-value { font-size:13px; color:#e8e8e8; font-weight:500; }
+  .ud-prof-avatar img { width:100%; height:100%; object-fit:cover; }
+  .ud-prof-name  { font-size:17px; font-weight:700; color:#F1F5F9; margin-bottom:4px; }
+  .ud-prof-email { font-size:12px; color:#475569; margin-bottom:12px; }
 
-  /* Edit form */
-  .edit-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .form-field { display:flex; flex-direction:column; gap:5px; }
-  .form-field.full { grid-column:1/-1; }
-  .form-label { font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
-  .form-input, .form-textarea {
-    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
-    border-radius:9px; padding:10px 13px; color:#fff; font-size:13.5px;
-    font-family:'DM Sans',sans-serif; outline:none; transition:border-color .2s;
+  .ud-field-list { display:flex; flex-direction:column; gap:8px; margin-top:16px; width:100%; text-align:left; }
+  .ud-field {
+    background:#080D18; border:1px solid #0F1729; border-radius:9px;
+    padding:10px 12px; display:flex; align-items:center; gap:10px;
   }
-  .form-input:focus, .form-textarea:focus { border-color:rgba(212,160,23,.5); }
-  .form-textarea { resize:vertical; min-height:70px; }
-  .form-actions { display:flex; gap:10px; margin-top:6px; grid-column:1/-1; }
-  .btn-save { background:linear-gradient(135deg,#d4a017,#b8860b); border:none; color:#000;
-    padding:10px 22px; border-radius:9px; font-size:13px; font-weight:700;
-    cursor:pointer; transition:opacity .2s; font-family:'DM Sans',sans-serif; }
-  .btn-save:hover { opacity:.9; }
-  .btn-save:disabled { opacity:.5; cursor:not-allowed; }
-  .btn-cancel { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
-    color:#888; padding:10px 18px; border-radius:9px; font-size:13px; cursor:pointer;
-    font-family:'DM Sans',sans-serif; }
+  .ud-field-lbl { font-size:10px; color:#334155; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
+  .ud-field-val { font-size:13px; color:#CBD5E1; font-weight:500; }
 
-  /* ── Settings ── */
-  .settings-section { margin-bottom:22px; }
-  .settings-section-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700;
-    color:#666; text-transform:uppercase; letter-spacing:.1em; margin-bottom:10px; }
-  .setting-row {
-    display:flex; align-items:center; gap:14px; padding:16px 18px;
-    background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);
-    border-radius:12px; margin-bottom:8px; transition:border-color .2s;
+  .ud-prof-right {
+    background:#0C1221; border:1px solid #131E35; border-radius:14px; padding:24px;
   }
-  .setting-row:hover { border-color:rgba(212,160,23,.2); }
-  .setting-icon-wrap { width:40px; height:40px; border-radius:10px; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center; font-size:18px; }
-  .setting-info { flex:1; }
-  .setting-row-title { font-size:13.5px; font-weight:600; color:#e8e8e8; margin-bottom:2px; }
-  .setting-row-desc  { font-size:12px; color:#666; }
-  .setting-toggle { width:44px; height:24px; border-radius:999px; cursor:pointer;
-    border:none; position:relative; transition:background .2s; flex-shrink:0; }
-  .setting-toggle.on  { background:linear-gradient(135deg,#d4a017,#b8860b); }
-  .setting-toggle.off { background:rgba(255,255,255,.1); }
-  .toggle-thumb { position:absolute; top:3px; width:18px; height:18px; border-radius:50%;
+  .ud-prof-right-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .ud-prof-right-title { font-size:15px; font-weight:600; color:#F1F5F9; }
+  .ud-edit-btn {
+    background:#0D1B2E; border:1px solid #1e3a5f; color:#60A5FA;
+    padding:6px 14px; border-radius:7px; font-size:12px; font-weight:600;
+    cursor:pointer; font-family:'Inter',sans-serif; transition:background .15s;
+  }
+  .ud-edit-btn:hover { background:#1e3050; }
+
+  .ud-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .ud-form-field { display:flex; flex-direction:column; gap:5px; }
+  .ud-form-field.full { grid-column:1/-1; }
+  .ud-form-label { font-size:11px; font-weight:600; color:#475569; text-transform:uppercase; letter-spacing:.05em; }
+  .ud-form-input {
+    background:#080D18; border:1px solid #131E35; border-radius:8px;
+    padding:9px 12px; color:#F1F5F9; font-size:13.5px;
+    font-family:'Inter',sans-serif; outline:none; transition:border-color .2s;
+  }
+  .ud-form-input:focus { border-color:#2563EB; }
+  .ud-form-actions { display:flex; gap:10px; margin-top:4px; grid-column:1/-1; }
+  .ud-btn-primary {
+    background:#2563EB; color:#fff; border:none;
+    padding:9px 22px; border-radius:8px; font-size:13px; font-weight:600;
+    cursor:pointer; transition:background .15s; font-family:'Inter',sans-serif;
+  }
+  .ud-btn-primary:hover { background:#1D4ED8; }
+  .ud-btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+  .ud-btn-ghost {
+    background:#0D1421; border:1px solid #131E35; color:#475569;
+    padding:9px 18px; border-radius:8px; font-size:13px; cursor:pointer;
+    font-family:'Inter',sans-serif; transition:background .15s;
+  }
+  .ud-btn-ghost:hover { background:#131E35; }
+
+  /* ─ Settings ─ */
+  .ud-set-section { margin-bottom:22px; }
+  .ud-set-label { font-size:11px; font-weight:600; color:#334155; text-transform:uppercase; letter-spacing:.07em; margin-bottom:10px; }
+  .ud-set-row {
+    display:flex; align-items:center; gap:13px; padding:14px 16px;
+    background:#080D18; border:1px solid #131E35; border-radius:11px;
+    margin-bottom:7px; transition:border-color .2s;
+  }
+  .ud-set-row:hover { border-color:#1e3a5f; }
+  .ud-set-icon { width:36px; height:36px; border-radius:9px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; }
+  .ud-set-info { flex:1; }
+  .ud-set-title { font-size:13.5px; font-weight:500; color:#E2E8F0; margin-bottom:1px; }
+  .ud-set-desc  { font-size:12px; color:#475569; }
+  .ud-toggle {
+    width:40px; height:22px; border-radius:999px; cursor:pointer; border:none;
+    position:relative; transition:background .2s; flex-shrink:0;
+  }
+  .ud-toggle.on  { background:#2563EB; }
+  .ud-toggle.off { background:#1a2438; }
+  .ud-toggle-thumb { position:absolute; top:2px; width:18px; height:18px; border-radius:50%;
     background:#fff; transition:left .2s; }
-  .setting-toggle.on  .toggle-thumb { left:23px; }
-  .setting-toggle.off .toggle-thumb { left:3px; }
-  .setting-btn-sm { background:rgba(212,160,23,.1); border:1px solid rgba(212,160,23,.2);
-    color:#d4a017; padding:7px 14px; border-radius:8px; font-size:12px; font-weight:600;
-    cursor:pointer; white-space:nowrap; transition:background .2s; }
-  .setting-btn-sm:hover { background:rgba(212,160,23,.2); }
+  .ud-toggle.on  .ud-toggle-thumb { left:20px; }
+  .ud-toggle.off .ud-toggle-thumb { left:2px;  }
 
-  .danger-zone { background:rgba(248,113,113,.04); border:1px solid rgba(248,113,113,.12);
-    border-radius:14px; padding:20px; }
-  .danger-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700;
-    color:#F87171; margin-bottom:6px; }
-  .danger-desc { font-size:13px; color:#888; margin-bottom:16px; }
-  .btn-danger { background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.25);
-    color:#F87171; padding:10px 20px; border-radius:9px; font-size:13px; font-weight:700;
-    cursor:pointer; transition:background .2s; }
-  .btn-danger:hover { background:rgba(248,113,113,.2); }
+  .ud-danger {
+    background:#0D0A0A; border:1px solid #2D1515; border-radius:12px; padding:18px;
+  }
+  .ud-danger-title { font-size:14px; font-weight:600; color:#EF4444; margin-bottom:5px; }
+  .ud-danger-desc  { font-size:13px; color:#475569; margin-bottom:14px; }
+  .ud-btn-danger {
+    background:#1A0808; border:1px solid #3D1515; color:#EF4444;
+    padding:9px 20px; border-radius:8px; font-size:13px; font-weight:600;
+    cursor:pointer; transition:background .15s; font-family:'Inter',sans-serif;
+  }
+  .ud-btn-danger:hover { background:#2A1010; }
 
-  /* ── Toast ── */
-  .dash-toast {
-    position:fixed; top:90px; right:24px; z-index:9999;
-    padding:13px 20px; border-radius:12px; font-size:13px; font-weight:600;
-    border:1px solid; backdrop-filter:blur(12px); animation:slideIn .3s ease;
+  /* ─ Empty state ─ */
+  .ud-empty { text-align:center; padding:40px 20px; }
+  .ud-empty-title { font-size:15px; font-weight:600; color:#334155; margin-bottom:6px; }
+  .ud-empty-sub   { font-size:13px; color:#2D3F55; margin-bottom:18px; }
+  .ud-empty-link  {
+    display:inline-block; background:#0D1B2E; border:1px solid #1e3a5f;
+    color:#60A5FA; padding:8px 18px; border-radius:8px; font-size:13px;
+    font-weight:600; text-decoration:none; transition:background .15s;
+  }
+  .ud-empty-link:hover { background:#1e3050; }
+
+  /* ─ Toast ─ */
+  .ud-toast {
+    position:fixed; top:84px; right:20px; z-index:9999;
+    padding:12px 18px; border-radius:10px; font-size:13px; font-weight:600;
+    border:1px solid; backdrop-filter:blur(16px);
     display:flex; align-items:center; gap:8px;
+    animation:slideIn .25s ease;
   }
 
-  /* ── Loading ── */
-  .dash-loader { display:flex; align-items:center; justify-content:center;
-    min-height:100vh; flex-direction:column; gap:16px; }
-  .spinner { width:44px; height:44px; border:3px solid rgba(212,160,23,.15);
-    border-top:3px solid #d4a017; border-radius:50%; animation:spin .8s linear infinite; }
+  /* ─ Loader ─ */
+  .ud-loader { display:flex; align-items:center; justify-content:center;
+    min-height:80vh; flex-direction:column; gap:12px; }
+  .ud-spin { width:36px; height:36px; border:2px solid #131E35;
+    border-top:2px solid #2563EB; border-radius:50%; animation:spin .7s linear infinite; }
 
-  /* ── Scrollbar ── */
-  ::-webkit-scrollbar { width:5px; height:5px; }
+  /* ─ Scrollbar ─ */
+  ::-webkit-scrollbar { width:4px; height:4px; }
   ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:rgba(212,160,23,.2); border-radius:999px; }
+  ::-webkit-scrollbar-thumb { background:#1e2d45; border-radius:999px; }
+
+  /* ─ Responsive ─ */
+  @media(max-width:920px) {
+    .ud-wrap { grid-template-columns:1fr; }
+    .ud-stats { grid-template-columns:1fr 1fr; }
+    .ud-prof-grid { grid-template-columns:1fr; }
+    .ud-side { position:static; }
+  }
+  @media(max-width:560px) {
+    .ud-stats { grid-template-columns:1fr; }
+    .ud-form-grid { grid-template-columns:1fr; }
+    .ud-ord-chips { grid-template-columns:1fr; }
+  }
 `;
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ── OrderItem ─────────────────────────────────────────────────────────────────
+function OrderItem({ order, expanded, onToggle }: { order:MongoOrder; expanded:boolean; onToggle:()=>void }) {
+  const st = S[order.status] ?? S.Pending;
+  const si = STAGE_IDX[order.status] ?? 0;
+  return (
+    <div className="ud-ord">
+      <div className="ud-ord-hd" onClick={onToggle}>
+        <div className="ud-ord-ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5">
+            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+        </div>
+        <div className="ud-ord-info">
+          <div className="ud-ord-name">{order.product}</div>
+          <div className="ud-ord-meta">
+            <span className="ud-ord-id">{order.orderId}</span>
+            <span className="ud-ord-amt">{order.amount}</span>
+            <span className="ud-ord-date">{new Date(order.createdAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"2-digit"})}</span>
+          </div>
+        </div>
+        <span className="ud-status-pill" style={{color:st.color,background:st.bg,borderColor:st.border}}>{st.label}</span>
+        <svg className={`ud-chevron ${expanded?"open":""}`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      {expanded && order.status !== "Cancelled" && (
+        <div className="ud-ord-body">
+          <div className="ud-tracker">
+            <div className="ud-tracker-lbl">Delivery Progress</div>
+            <div className="ud-stages">
+              {STAGES.map((s,i) => {
+                const cls = i < si ? "done" : i === si ? "cur" : "";
+                return (
+                  <div key={s.label} className={`ud-stage ${cls}`}>
+                    <div className="ud-stage-dot">
+                      {i <= si && (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={i < si ? "#fff" : "#3B82F6"} strokeWidth="2.5">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                    </div>
+                    <div className="ud-stage-lbl">{s.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="ud-ord-chips">
+            {[
+              ["Quantity", order.quantity||"—"],
+              ["Delivery", order.deliveryAddress ? `${order.deliveryAddress.city}, ${order.deliveryAddress.state}` : "—"],
+              ["Ordered",  new Date(order.createdAt).toLocaleDateString("en-IN")],
+              ["Notes",    order.notes||"None"],
+            ].map(([l,v]) => (
+              <div key={l} className="ud-chip">
+                <div className="ud-chip-lbl">{l}</div>
+                <div className="ud-chip-val">{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function UserDashboard() {
   const { user, profile } = useAuth();
-  const navigate          = useNavigate();
-  const location          = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [activeTab, setActiveTab]     = useState<Tab>("overview");
-  const [mongoUser, setMongoUser]     = useState<MongoUser | null>(null);
-  const [orders,    setOrders]        = useState<MongoOrder[]>([]);
-  const [loadingUser,  setLoadingUser]    = useState(true);
-  const [loadingOrders,setLoadingOrders]  = useState(true);
-  const [error,        setError]          = useState("");
-  const [expandedOrder,setExpandedOrder] = useState<string | null>(null);
-  const [toast,        setToast]          = useState("");
-  const [editMode,     setEditMode]       = useState(false);
-  const [saving,       setSaving]         = useState(false);
+  const [tab,   setTab]   = useState<Tab>("overview");
+  const [mu,    setMU]    = useState<MongoUser|null>(null);
+  const [ords,  setOrds]  = useState<MongoOrder[]>([]);
+  const [load,  setLoad]  = useState(true);
+  const [exp,   setExp]   = useState<string|null>(null);
+  const [toast, setToast] = useState("");
+  const [edit,  setEdit]  = useState(false);
+  const [save,  setSave]  = useState(false);
+  const [sett,  setSett]  = useState({ emailNotify:true, smsNotify:false, orderUpdates:true, newsletter:false });
+  const [form,  setForm]  = useState<EditForm>({name:"",phone:"",company:"",street:"",city:"",state:"",pincode:""});
 
-  // Settings toggles
-  const [settings, setSettings] = useState<DashboardSettings>({
-    emailNotify:   true,
-    smsNotify:     false,
-    orderUpdates:  true,
-    newsletter:    false,
-    twoFactor:     false,
-  });
-
-  // Edit form
-  const [editForm, setEditForm] = useState<EditProfileForm>({
-    name: "", phone: "", company: "",
-    street: "", city: "", state: "", pincode: "",
-  });
-
-  // Read tab from URL hash
   useEffect(() => {
-    const hash = location.hash.replace("#", "") as Tab;
-    if (["overview","orders","projects","profile","settings"].includes(hash)) {
-      setActiveTab(hash);
-    }
-  }, [location.hash]);
+    const h = location.hash.replace("#","") as Tab;
+    if(["overview","orders","quotations","profile","settings"].includes(h)) setTab(h);
+  },[location.hash]);
 
-  // Fetch data
   useEffect(() => {
-    if (!user?.uid) return;
-    setLoadingUser(true);
-    getUser(user.uid)
-      .then(u => {
-        setMongoUser(u);
-        setEditForm({
-          name: u.name, phone: u.phone, company: u.company,
-          street: u.address?.street || "", city: u.address?.city || "",
-          state: u.address?.state || "", pincode: u.address?.pincode || "",
-        });
-      })
-      .catch(() => setError("Backend offline — showing cached data"))
-      .finally(() => setLoadingUser(false));
-
-    setLoadingOrders(true);
-    getUserOrders(user.uid)
-      .then(setOrders)
-      .catch(() => {})
-      .finally(() => setLoadingOrders(false));
-  }, [user?.uid]);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 3000);
-  };
-
-  const handleLogout = async () => { await logOut(); navigate("/"); };
-
-  const handleSave = async () => {
-    if (!user?.uid) return;
-    setSaving(true);
-    try {
-      const updated = await updateUser(user.uid, {
-        name: editForm.name, phone: editForm.phone, company: editForm.company,
-        address: { street: editForm.street, city: editForm.city, state: editForm.state, pincode: editForm.pincode },
+    if(!user?.uid) return;
+    setLoad(true);
+    getUser(user.uid).then(u => {
+      setMU(u);
+      setForm({name:u.name, phone:u.phone, company:u.company,
+        street:u.address?.street||"", city:u.address?.city||"",
+        state:u.address?.state||"", pincode:u.address?.pincode||""});
+    }).catch(()=>{
+      // Backend offline — pre-fill form with mock profile so UX is not broken
+      setForm({
+        name:MOCK_PROFILE.name, phone:MOCK_PROFILE.phone, company:MOCK_PROFILE.company,
+        street:MOCK_PROFILE.address.street, city:MOCK_PROFILE.address.city,
+        state:MOCK_PROFILE.address.state, pincode:MOCK_PROFILE.address.pincode,
       });
-      setMongoUser(updated);
-      setEditMode(false);
-      showToast("✅ Profile updated successfully!");
-    } catch {
-      showToast("❌ Failed to save. Check backend.");
-    } finally {
-      setSaving(false);
-    }
+    }).finally(()=>setLoad(false));
+    getUserOrders(user.uid).then(setOrds).catch(()=>{});
+  },[user?.uid]);
+
+  const toast$ = (m:string)=>{setToast(m);setTimeout(()=>setToast(""),3000);};
+  const goTab  = (t:Tab)   =>{setTab(t);navigate(`/dashboard#${t}`,{replace:true});};
+  const logout = async ()  =>{await logOut();navigate("/");};
+
+  const saveProfile = async ()=>{
+    if(!user?.uid) return; setSave(true);
+    try {
+      const u = await updateUser(user.uid,{name:form.name,phone:form.phone,company:form.company,
+        address:{street:form.street,city:form.city,state:form.state,pincode:form.pincode}});
+      setMU(u); setEdit(false); toast$("✅ Profile saved");
+    } catch { toast$("❌ Save failed"); } finally { setSave(false); }
   };
 
-  const goTab = (tab: Tab) => {
-    setActiveTab(tab);
-    navigate(`/dashboard#${tab}`, { replace: true });
-  };
-
-  const displayName  = mongoUser?.name     ?? profile?.name    ?? user?.displayName ?? "User";
-  const displayEmail = mongoUser?.email    ?? user?.email      ?? "";
-  const displayPhoto = mongoUser?.photoURL ?? user?.photoURL   ?? "";
-  const initials     = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-  const delivered    = orders.filter(o => o.status === "Delivered").length;
-  const inProgress   = orders.filter(o => ["Processing","Shipped","Pending"].includes(o.status)).length;
-
-  const tabs = [
-    { id: "overview"  as Tab, label: "Overview",   icon: "⊞" },
-    { id: "orders"    as Tab, label: "My Orders",   icon: "📦", badge: orders.length },
-    { id: "projects"  as Tab, label: "My Projects", icon: "🏗",  badge: MOCK_PROJECTS.filter(p=>p.status==="ongoing").length },
-    { id: "profile"   as Tab, label: "Profile",     icon: "👤" },
-    { id: "settings"  as Tab, label: "Settings",    icon: "⚙" },
+  // Merge real DB orders with mock demo orders (deduplicate by _id)
+  const allOrds = [
+    ...ords,
+    ...MOCK_ORDERS.filter(m => !ords.find(o => o.orderId === m.orderId)),
   ];
 
-  if (loadingUser) return (
-    <>
-      <style>{CSS}</style>
-      <div className="dash-loader">
-        <div className="spinner" />
-        <p style={{ color: "#666", fontSize: "14px" }}>Loading your dashboard…</p>
-      </div>
-    </>
-  );
+  // Use real profile if loaded, otherwise show mock
+  const displayMu = mu ?? (MOCK_PROFILE as unknown as MongoUser);
+
+  const name  = displayMu?.name     ?? profile?.name    ?? user?.displayName ?? "User";
+  const email = displayMu?.email    ?? user?.email       ?? "";
+  const photo = displayMu?.photoURL ?? user?.photoURL    ?? "";
+  const inits = name.split(" ").map((n:string)=>n[0]).join("").toUpperCase().slice(0,2);
+  const deld  = allOrds.filter(o=>o.status==="Delivered").length;
+  const actv  = allOrds.filter(o=>["Processing","Shipped","Pending"].includes(o.status)).length;
+
+  const TABS = [
+    {id:"overview"   as Tab, label:"Overview",     icon:"▣"},
+    {id:"orders"     as Tab, label:"Orders",       icon:"⊞", badge:allOrds.length},
+    {id:"quotations" as Tab, label:"Quotations",   icon:"☰", badge:MOCK_QUOTES.length},
+    {id:"profile"    as Tab, label:"Profile",      icon:"◯"},
+    {id:"settings"   as Tab, label:"Settings",     icon:"◎"},
+  ];
+
+  const HDR:{[K in Tab]:{title:string;sub:string}} = {
+    overview:  {title:`Good to see you, ${name.split(" ")[0]}`,  sub:"Here's everything about your account at a glance"},
+    orders:    {title:"Your Orders",      sub:"Real-time order status and delivery tracking"},
+    quotations:{title:"Quotation Requests", sub:"Track submitted quotes and their approvals"},
+    profile:   {title:"My Profile",      sub:"Update your personal and delivery information"},
+    settings:  {title:"Settings",        sub:"Manage notifications, preferences and security"},
+  };
+
+  if(load) return <><style>{CSS}</style><div className="ud"><div className="ud-loader"><div className="ud-spin"/><p style={{color:"#334155",fontSize:"13px"}}>Loading…</p></div></div></>;
 
   return (
     <>
       <style>{CSS}</style>
-      <div className="dash-page">
-        <div className="dash-bg-grid" />
-        <div className="dash-bg-orb1" />
-        <div className="dash-bg-orb2" />
-
-        {/* Toast */}
+      <div className="ud">
         {toast && (
-          <div className="dash-toast" style={{
-            background: toast.startsWith("✅") ? "rgba(10,30,10,.9)" : "rgba(30,10,10,.9)",
-            borderColor: toast.startsWith("✅") ? "#4ADE80" : "#F87171",
-            color:       toast.startsWith("✅") ? "#4ADE80" : "#F87171",
+          <div className="ud-toast" style={{
+            background: toast.startsWith("✅") ? "#04120A" : "#120404",
+            borderColor: toast.startsWith("✅") ? "#16502e" : "#501616",
+            color: toast.startsWith("✅") ? "#22C55E" : "#EF4444",
           }}>{toast}</div>
         )}
 
-        <div className="dash-layout">
-
-          {/* ── SIDEBAR ─────────────────────────────────────────────────── */}
-          <aside className="sidebar">
-            <div className="side-profile-card">
-              <div className="avatar-ring">
-                {displayPhoto
-                  ? <img src={displayPhoto} alt={displayName} />
-                  : <div className="avatar-fallback">{initials}</div>
-                }
-                <div className="avatar-online" />
+        <div className="ud-wrap">
+          {/* ── SIDEBAR ── */}
+          <aside className="ud-side">
+            <div className="ud-side-profile">
+              <div className="ud-avatar-wrap">
+                {photo ? <img src={photo} alt={name}/> : inits}
               </div>
-              <p className="side-name">{displayName}</p>
-              <p className="side-email">{displayEmail}</p>
-              <span className="side-role">
-                {mongoUser?.role === "admin" ? "🛡 Admin" : "✦ Customer"}
-              </span>
+              <div className="ud-side-name">{name}</div>
+              <div className="ud-side-email">{email}</div>
+              <div className="ud-side-chip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="#60A5FA"><circle cx="12" cy="12" r="10"/></svg>
+                Customer
+              </div>
             </div>
 
-            <nav className="side-nav">
-              {tabs.map(t => (
-                <button
-                  key={t.id}
-                  className={`side-nav-btn ${activeTab === t.id ? "active" : ""}`}
-                  onClick={() => goTab(t.id)}
-                >
-                  <span className="side-nav-icon">{t.icon}</span>
-                  {t.label}
-                  {t.badge ? <span className="side-badge">{t.badge}</span> : null}
-                </button>
-              ))}
-            </nav>
+            <div className="ud-nav-sep"/>
+            <div className="ud-nav-label">Dashboard</div>
 
-            <button className="side-logout" onClick={handleLogout}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+            {TABS.map(t=>(
+              <button key={t.id} className={`ud-nav-btn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}>
+                <div className="ud-nav-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    {t.id==="overview"   && <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></>}
+                    {t.id==="orders"     && <><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></>}
+                    {t.id==="quotations" && <><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></>}
+                    {t.id==="profile"    && <><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></>}
+                    {t.id==="settings"   && <><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0..."/><circle cx="12" cy="12" r="3"/></>}
+                  </svg>
+                </div>
+                {t.label}
+                {t.badge ? <span className="ud-nav-badge">{t.badge}</span> : null}
+              </button>
+            ))}
+
+            <div className="ud-nav-sep"/>
+            <div className="ud-nav-label">Quick</div>
+            {[
+              {label:"Browse Products", to:"/products"},
+              {label:"Request Quote",   to:"/contact"},
+              {label:"Contact Support", to:"/contact"},
+            ].map(a=>(
+              <Link key={a.label} to={a.to} className="ud-quick-link">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M7 17l9.2-9.2M17 17V7H7"/>
+                </svg>
+                {a.label}
+              </Link>
+            ))}
+
+            <div className="ud-nav-sep"/>
+            <button className="ud-logout-btn" onClick={logout}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
               </svg>
-              Logout
+              Sign Out
             </button>
           </aside>
 
-          {/* ── MAIN ────────────────────────────────────────────────────── */}
-          <main className="dash-main">
-            {error && (
-              <div style={{ background:"rgba(248,113,113,.06)", border:"1px solid rgba(248,113,113,.2)",
-                borderRadius:"10px", padding:"12px 16px", color:"#F87171", fontSize:"13px", marginBottom:"4px" }}>
-                ⚠ {error}
-              </div>
-            )}
-
-            <div className="dash-header">
-              <h1 className="dash-title">
-                {activeTab === "overview"  && `Hey ${displayName.split(" ")[0]}, welcome back 👋`}
-                {activeTab === "orders"    && "My Orders"}
-                {activeTab === "projects"  && "My Projects"}
-                {activeTab === "profile"   && "My Profile"}
-                {activeTab === "settings"  && "Settings"}
-              </h1>
-              <p className="dash-sub">
-                {activeTab === "overview"  && "Here's your ShriKrishna SteelWorks account at a glance"}
-                {activeTab === "orders"    && "Track every order with real-time progress"}
-                {activeTab === "projects"  && "Your ongoing and completed steel projects"}
-                {activeTab === "profile"   && "View and edit your personal information"}
-                {activeTab === "settings"  && "Manage your account preferences and security"}
-              </p>
+          {/* ── MAIN ── */}
+          <main className="ud-main">
+            <div className="ud-ph">
+              <h1 className="ud-ph-title">{HDR[tab].title}</h1>
+              <p className="ud-ph-sub">{HDR[tab].sub}</p>
             </div>
 
-            {/* ── OVERVIEW ──────────────────────────────────────────── */}
-            {activeTab === "overview" && (
+            {/* OVERVIEW */}
+            {tab==="overview" && (
               <>
-                {/* Stats */}
-                <div className="stats-grid">
+                <div className="ud-stats">
                   {[
-                    { label:"Total Orders",   val:String(orders.length),  icon:"📦", color:"#60A5FA" },
-                    { label:"Delivered",       val:String(delivered),       icon:"✅", color:"#4ADE80" },
-                    { label:"In Progress",     val:String(inProgress),      icon:"🔄", color:"#FBbF24" },
-                    { label:"My Projects",     val:String(MOCK_PROJECTS.length), icon:"🏗", color:"#d4a017" },
-                  ].map(s => (
-                    <div className="stat-card" key={s.label}>
-                      <div className="stat-icon" style={{ background: s.color + "18" }}>
-                        <span>{s.icon}</span>
+                    {label:"Total Orders", val:allOrds.length, color:"#3B82F6", bg:"#0D1B2E"},
+                    {label:"Delivered",    val:deld,        color:"#22C55E", bg:"#05140D"},
+                    {label:"Active",       val:actv,        color:"#F59E0B", bg:"#1A1005"},
+                  ].map(s=>(
+                    <div className="ud-stat" key={s.label}>
+                      <div className="ud-stat-icon" style={{background:s.bg+66}}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={s.color} strokeWidth="2">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
                       </div>
-                      <div>
-                        <div className="stat-val" style={{ color: s.color }}>{s.val}</div>
-                        <div className="stat-lbl">{s.label}</div>
-                      </div>
+                      <div className="ud-stat-val" style={{color:s.color}}>{s.val}</div>
+                      <div className="ud-stat-label">{s.label}</div>
                     </div>
                   ))}
                 </div>
 
-                {/* Recent Orders as product cards */}
-                <div className="glass-card">
-                  <div className="card-title">
-                    📦 Recent Orders
-                    <button onClick={() => goTab("orders")} style={{ marginLeft:"auto",
-                      background:"none", border:"none", color:"#d4a017", fontSize:"13px",
-                      cursor:"pointer", fontWeight:600 }}>
-                      View all →
-                    </button>
+                <div className="ud-banner">
+                  <div className="ud-banner-icon">📋</div>
+                  <div className="ud-banner-text">
+                    <div className="ud-banner-title">Need custom steel pricing?</div>
+                    <div className="ud-banner-desc">Submit a quotation request and receive a detailed proposal within 24 hrs.</div>
                   </div>
-                  {loadingOrders
-                    ? <p style={{ color:"#666", fontSize:"13px" }}>Loading…</p>
-                    : orders.length === 0
-                      ? <EmptyState icon="📦" text="No orders yet" />
-                      : <div className="products-grid">
-                          {orders.slice(0,4).map(o => <ProductCard key={o._id} order={o} />)}
-                        </div>
+                  <Link to="/contact" className="ud-banner-btn">Request Quote</Link>
+                </div>
+
+                <div className="ud-card">
+                  <div className="ud-card-title">
+                    Recent Orders
+                    <button className="ud-card-title-action" onClick={()=>goTab("orders")}>View all →</button>
+                  </div>
+                  {ords.length===0
+                    ? <div className="ud-empty">
+                        <div className="ud-empty-title">No orders yet</div>
+                        <div className="ud-empty-sub">Browse our catalog and submit your first quotation.</div>
+                        <Link to="/products" className="ud-empty-link">Browse Products</Link>
+                      </div>
+                  : <div className="ud-ord-list">{allOrds.slice(0,3).map(o=>(
+                      <OrderItem key={o._id} order={o} expanded={exp===o._id} onToggle={()=>setExp(exp===o._id?null:o._id)}/>
+                    ))}</div>
                   }
                 </div>
 
-                {/* Active Projects snippet */}
-                <div className="glass-card">
-                  <div className="card-title">
-                    🏗 Active Projects
-                    <button onClick={() => goTab("projects")} style={{ marginLeft:"auto",
-                      background:"none", border:"none", color:"#d4a017", fontSize:"13px",
-                      cursor:"pointer", fontWeight:600 }}>
-                      View all →
-                    </button>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
-                    {MOCK_PROJECTS.filter(p => p.status !== "completed").map(p => (
-                      <MiniProjectRow key={p.id} project={p} />
+                <div className="ud-card">
+                  <div className="ud-card-title">Recent Activity</div>
+                  <div className="ud-activity">
+                    {[
+                      {icon:"🔩",title:"Browsed TMT Steel Bar Fe-500 products",    time:"Today, 9:40 AM",    bg:"#0D1B2E"},
+                      {icon:"📋",title:"Submitted quotation — SS Balcony Railing",  time:"Yesterday, 3:10 PM",bg:"#0D1421"},
+                      {icon:"✅",title:"Order SKW-2025-001 delivered",              time:"20 Jan 2025",       bg:"#05140D"},
+                      {icon:"✏",title:"Updated delivery address",                  time:"14 Jan 2025",       bg:"#0D1421"},
+                    ].map((a,i)=>(
+                      <div key={i} className="ud-act-row">
+                        <div className="ud-act-dot" style={{background:a.bg}}>{a.icon}</div>
+                        <div className="ud-act-body">
+                          <div className="ud-act-title">{a.title}</div>
+                          <div className="ud-act-time">{a.time}</div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
               </>
             )}
 
-            {/* ── ORDERS ────────────────────────────────────────────── */}
-            {activeTab === "orders" && (
-              <div className="glass-card">
-                <div className="card-title">📦 All Orders ({orders.length})</div>
-                {loadingOrders
-                  ? <p style={{ color:"#666", fontSize:"13px" }}>Loading orders…</p>
-                  : orders.length === 0
-                    ? <EmptyState icon="📦" text="No orders yet. Your orders will appear here." />
-                    : <div className="order-list">
-                        {orders.map(o => (
-                          <OrderItem
-                            key={o._id}
-                            order={o}
-                            expanded={expandedOrder === o._id}
-                            onToggle={() => setExpandedOrder(expandedOrder === o._id ? null : o._id)}
-                          />
-                        ))}
-                      </div>
-                }
+            {/* ORDERS */}
+            {tab==="orders" && (
+              <div className="ud-card">
+                <div className="ud-card-title">All Orders ({allOrds.length})</div>
+                <div className="ud-ord-list">{allOrds.map(o=>(
+                    <OrderItem key={o._id} order={o} expanded={exp===o._id} onToggle={()=>setExp(exp===o._id?null:o._id)}/>
+                  ))}</div>
               </div>
             )}
 
-            {/* ── PROJECTS ──────────────────────────────────────────── */}
-            {activeTab === "projects" && (
-              <div className="glass-card">
-                <div className="card-title">🏗 My Projects ({MOCK_PROJECTS.length})</div>
-                <div className="projects-grid">
-                  {MOCK_PROJECTS.map(p => <ProjectCard key={p.id} project={p} />)}
-                </div>
-              </div>
-            )}
-
-            {/* ── PROFILE ───────────────────────────────────────────── */}
-            {activeTab === "profile" && (
-              <div className="profile-layout">
-                {/* Left: avatar + read-only fields */}
-                <div className="profile-card">
-                  <div style={{ textAlign:"center", marginBottom:"20px" }}>
-                    <div className="profile-avatar-big" style={{ margin:"0 auto 14px" }}>
-                      {displayPhoto
-                        ? <img src={displayPhoto} alt={displayName} style={{ width:"100%", height:"100%", borderRadius:"50%", objectFit:"cover" }} />
-                        : <div className="avatar-big-fb">{initials}</div>
-                      }
-                    </div>
-                    <p style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:"18px", color:"#fff" }}>{displayName}</p>
-                    <p style={{ fontSize:"12px", color:"#666", marginTop:"4px" }}>{displayEmail}</p>
+            {/* QUOTATIONS */}
+            {tab==="quotations" && (
+              <>
+                <div className="ud-banner">
+                  <div className="ud-banner-icon">💬</div>
+                  <div className="ud-banner-text">
+                    <div className="ud-banner-title">Submit a new quotation</div>
+                    <div className="ud-banner-desc">Describe your requirements and our team will respond within 24 hours.</div>
                   </div>
-                  <div className="profile-fields-grid">
+                  <Link to="/contact" className="ud-banner-btn">New Request</Link>
+                </div>
+                <div className="ud-card">
+                  <div className="ud-card-title">All Quotations ({MOCK_QUOTES.length})</div>
+                  <div className="ud-quotes">
+                    {MOCK_QUOTES.map(q=>{
+                      const qs=QS[q.status]??QS.Pending;
+                      return (
+                        <div key={q.id} className="ud-quote-row">
+                          <div className="ud-quote-ico">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5">
+                              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                          </div>
+                          <div className="ud-quote-info">
+                            <div className="ud-quote-name">{q.product}</div>
+                            <div className="ud-quote-meta">{q.id} · {q.qty} · {q.date}</div>
+                          </div>
+                          <div className="ud-quote-right">
+                            <div className="ud-quote-amt">{q.amount}</div>
+                            <span className="ud-status-pill" style={{color:qs.color,background:qs.bg,borderColor:qs.border}}>{q.status}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* PROFILE */}
+            {tab==="profile" && (
+              <div className="ud-prof-grid">
+                <div className="ud-prof-left">
+                  <div className="ud-prof-avatar">
+                    {photo ? <img src={photo} alt={name}/> : inits}
+                  </div>
+                  <div className="ud-prof-name">{name}</div>
+                  <div className="ud-prof-email">{email}</div>
+                  <div className="ud-side-chip" style={{margin:"8px 0 0"}}>✦ Customer</div>
+                  <div className="ud-field-list">
                     {[
-                      { icon:"✉",  label:"Email",        val: mongoUser?.email    || "—" },
-                      { icon:"📞", label:"Phone",         val: mongoUser?.phone    || "Not set" },
-                      { icon:"🏢", label:"Company",       val: mongoUser?.company  || "Not set" },
-                      { icon:"🛡", label:"Role",           val: mongoUser?.role     || "user" },
-                      { icon:"📍", label:"City",           val: mongoUser?.address?.city    || "Not set" },
-                      { icon:"🗓", label:"Member Since",   val: mongoUser?.createdAt
-                          ? new Date(mongoUser.createdAt).toLocaleDateString("en-IN",{ month:"long", year:"numeric" })
-                          : "—" },
-                    ].map(f => (
-                      <div className="pf-item" key={f.label}>
-                        <span className="pf-icon">{f.icon}</span>
+                      {label:"Phone",   val:displayMu?.phone||"Not set"},
+                      {label:"Company", val:displayMu?.company||"Not set"},
+                      {label:"City",    val:displayMu?.address?.city||"Not set"},
+                      {label:"State",   val:displayMu?.address?.state||"Not set"},
+                    ].map(f=>(
+                      <div key={f.label} className="ud-field">
                         <div>
-                          <div className="pf-label">{f.label}</div>
-                          <div className="pf-value">{f.val}</div>
+                          <div className="ud-field-lbl">{f.label}</div>
+                          <div className="ud-field-val">{f.val}</div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Right: editable form */}
-                <div className="profile-card">
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"18px" }}>
-                    <span style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:"15px", color:"#fff" }}>
-                      {editMode ? "✏ Edit Profile" : "Account Details"}
-                    </span>
-                    {!editMode && (
-                      <button className="btn-save" style={{ padding:"8px 16px", fontSize:"12px" }}
-                        onClick={() => setEditMode(true)}>
-                        ✏ Edit
-                      </button>
-                    )}
+                <div className="ud-prof-right">
+                  <div className="ud-prof-right-hdr">
+                    <div className="ud-prof-right-title">Personal Information</div>
+                    {!edit && <button className="ud-edit-btn" onClick={()=>setEdit(true)}>Edit Profile</button>}
                   </div>
-
-                  <div className="edit-form-grid">
-                    {[
-                      { key:"name",    label:"Full Name",    placeholder:"Your full name",    full:false },
-                      { key:"phone",   label:"Phone Number", placeholder:"9876543210",         full:false },
-                      { key:"company", label:"Company",      placeholder:"Company name",       full:true  },
-                      { key:"street",  label:"Street Address",placeholder:"Plot/Street",       full:true  },
-                      { key:"city",    label:"City",          placeholder:"City",              full:false },
-                      { key:"state",   label:"State",         placeholder:"Maharashtra",       full:false },
-                      { key:"pincode", label:"Pincode",       placeholder:"440001",            full:false },
-                    ].map(f => (
-                      <div className={`form-field ${f.full ? "full" : ""}`} key={f.key}>
-                        <label className="form-label">{f.label}</label>
-                        {editMode ? (
-                          <input
-                            className="form-input"
-                            value={editForm[f.key as keyof EditProfileForm]}
-                            onChange={e => setEditForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                            placeholder={f.placeholder}
-                          />
-                        ) : (
-                          <div className="form-input" style={{ color: editForm[f.key as keyof EditProfileForm] ? "#e8e8e8" : "#444" }}>
-                            {editForm[f.key as keyof EditProfileForm] || `— ${f.placeholder}`}
+                  {edit ? (
+                    <div className="ud-form-grid">
+                      {[
+                        {label:"Full Name",  key:"name",    ph:"Rajesh Sharma",           full:false},
+                        {label:"Phone",      key:"phone",   ph:"9876543210",              full:false},
+                        {label:"Company",    key:"company", ph:"ABC Constructions",       full:false},
+                        {label:"Street",     key:"street",  ph:"Plot 12, MIDC Nagpur",    full:true},
+                        {label:"City",       key:"city",    ph:"Nagpur",                  full:false},
+                        {label:"State",      key:"state",   ph:"Maharashtra",             full:false},
+                        {label:"Pincode",    key:"pincode", ph:"440016",                  full:false},
+                      ].map(f=>(
+                        <div key={f.key} className={`ud-form-field${f.full?" full":""}`}>
+                          <label className="ud-form-label">{f.label}</label>
+                          <input className="ud-form-input" placeholder={f.ph}
+                            value={(form as Record<string,string>)[f.key]}
+                            onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}/>
+                        </div>
+                      ))}
+                      <div className="ud-form-actions">
+                        <button className="ud-btn-primary" onClick={saveProfile} disabled={save}>{save?"Saving…":"Save Changes"}</button>
+                        <button className="ud-btn-ghost" onClick={()=>setEdit(false)}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="ud-field-list">
+                      {[
+                        {label:"Full Name",    val:displayMu?.name||"—"},
+                        {label:"Phone",        val:displayMu?.phone||"Not set"},
+                        {label:"Company",      val:displayMu?.company||"Not set"},
+                        {label:"Street",       val:displayMu?.address?.street||"Not set"},
+                        {label:"City",         val:displayMu?.address?.city||"Not set"},
+                        {label:"State",        val:displayMu?.address?.state||"Not set"},
+                        {label:"Pincode",      val:displayMu?.address?.pincode||"Not set"},
+                      ].map(f=>(
+                        <div key={f.label} className="ud-field">
+                          <div>
+                            <div className="ud-field-lbl">{f.label}</div>
+                            <div className="ud-field-val">{f.val}</div>
                           </div>
-                        )}
-                      </div>
-                    ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
-                    {editMode && (
-                      <div className="form-actions">
-                        <button className="btn-save" onClick={handleSave} disabled={saving}>
-                          {saving ? "Saving…" : "💾 Save Changes"}
+            {/* SETTINGS */}
+            {tab==="settings" && (
+              <div className="ud-card">
+                <div className="ud-card-title">Preferences & Security</div>
+
+                <div className="ud-set-section">
+                  <div className="ud-set-label">Notifications</div>
+                  {(["emailNotify","smsNotify","orderUpdates","newsletter"] as const).map(k=>{
+                    const INFO:{[key:string]:{title:string;desc:string;bg:string}} = {
+                      emailNotify:  {title:"Email Notifications",  desc:"Order confirmations and shipping updates",  bg:"#0D1B2E"},
+                      smsNotify:    {title:"SMS Alerts",            desc:"Delivery status via text message",          bg:"#05140D"},
+                      orderUpdates: {title:"Order Status Updates",  desc:"Real-time status changes",                 bg:"#1A1005"},
+                      newsletter:   {title:"Newsletter",            desc:"Products, offers and industry news",        bg:"#130c26"},
+                    };
+                    const i = INFO[k];
+                    return (
+                      <div key={k} className="ud-set-row">
+                        <div className="ud-set-icon" style={{background:i.bg}}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="1.5">
+                            <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                          </svg>
+                        </div>
+                        <div className="ud-set-info">
+                          <div className="ud-set-title">{i.title}</div>
+                          <div className="ud-set-desc">{i.desc}</div>
+                        </div>
+                        <button className={`ud-toggle ${sett[k]?"on":"off"}`}
+                          onClick={()=>setSett(p=>({...p,[k]:!p[k]}))}>
+                          <div className="ud-toggle-thumb"/>
                         </button>
-                        <button className="btn-cancel" onClick={() => setEditMode(false)}>Cancel</button>
                       </div>
-                    )}
+                    );
+                  })}
+                </div>
+
+                <div className="ud-set-section">
+                  <div className="ud-set-label">Security</div>
+                  <div className="ud-set-row">
+                    <div className="ud-set-icon" style={{background:"#1A1005"}}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5">
+                        <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                      </svg>
+                    </div>
+                    <div className="ud-set-info">
+                      <div className="ud-set-title">Password</div>
+                      <div className="ud-set-desc">Reset via email link</div>
+                    </div>
+                    <Link to="/login" style={{background:"#0D1421",border:"1px solid #131E35",color:"#60A5FA",
+                      padding:"6px 14px",borderRadius:"7px",fontSize:"12px",fontWeight:600,textDecoration:"none"}}>
+                      Reset
+                    </Link>
                   </div>
+                </div>
+
+                <div className="ud-danger">
+                  <div className="ud-danger-title">Danger Zone</div>
+                  <div className="ud-danger-desc">This will end your current session and clear all local data.</div>
+                  <button className="ud-btn-danger" onClick={logout}>Sign Out</button>
                 </div>
               </div>
             )}
-
-            {/* ── SETTINGS ──────────────────────────────────────────── */}
-            {activeTab === "settings" && (
-              <div className="glass-card">
-                {/* Notifications */}
-                <div className="settings-section">
-                  <div className="settings-section-title">🔔 Notifications</div>
-                  {[
-                    { key:"emailNotify",  title:"Email Notifications",  desc:"Receive order updates via email",         icon:"✉",  type:"toggle" },
-                    { key:"smsNotify",    title:"SMS Alerts",            desc:"Get SMS for dispatch and delivery",       icon:"📱", type:"toggle" },
-                    { key:"orderUpdates", title:"Order Status Updates",  desc:"Instant alerts when order status changes",icon:"📦", type:"toggle" },
-                    { key:"newsletter",   title:"Newsletter",            desc:"Monthly steel market updates & offers",   icon:"📰", type:"toggle" },
-                  ].map(s => (
-                    <div className="setting-row" key={s.key}>
-                      <div className="setting-icon-wrap" style={{ background:"rgba(212,160,23,.08)" }}>
-                        <span>{s.icon}</span>
-                      </div>
-                      <div className="setting-info">
-                        <div className="setting-row-title">{s.title}</div>
-                        <div className="setting-row-desc">{s.desc}</div>
-                      </div>
-                      <ToggleSwitch
-                        on={settings[s.key as NotifyToggleKey]}
-                        onToggle={() => setSettings(prev => ({
-                          ...prev,
-                          [s.key]: !prev[s.key as NotifyToggleKey],
-                        }))}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Security */}
-                <div className="settings-section">
-                  <div className="settings-section-title">🔒 Security</div>
-                  <div className="setting-row">
-                    <div className="setting-icon-wrap" style={{ background:"rgba(96,165,250,.08)" }}>
-                      <span>🔒</span>
-                    </div>
-                    <div className="setting-info">
-                      <div className="setting-row-title">Two-Factor Authentication</div>
-                      <div className="setting-row-desc">Add extra security to your account</div>
-                    </div>
-                    <ToggleSwitch on={settings.twoFactor}
-                      onToggle={() => setSettings(p => ({ ...p, twoFactor: !p.twoFactor }))} />
-                  </div>
-                  <div className="setting-row">
-                    <div className="setting-icon-wrap" style={{ background:"rgba(96,165,250,.08)" }}>
-                      <span>🔑</span>
-                    </div>
-                    <div className="setting-info">
-                      <div className="setting-row-title">Change Password</div>
-                      <div className="setting-row-desc">Update your account password</div>
-                    </div>
-                    <button className="setting-btn-sm"
-                      onClick={() => showToast("✅ Password reset email sent!")}>
-                      Send Reset Email
-                    </button>
-                  </div>
-                  <div className="setting-row">
-                    <div className="setting-icon-wrap" style={{ background:"rgba(96,165,250,.08)" }}>
-                      <span>📋</span>
-                    </div>
-                    <div className="setting-info">
-                      <div className="setting-row-title">Active Sessions</div>
-                      <div className="setting-row-desc">Manage devices logged into your account</div>
-                    </div>
-                    <button className="setting-btn-sm">View Sessions</button>
-                  </div>
-                </div>
-
-                {/* Preferences */}
-                <div className="settings-section">
-                  <div className="settings-section-title">⚙ Preferences</div>
-                  <div className="setting-row">
-                    <div className="setting-icon-wrap" style={{ background:"rgba(74,222,128,.08)" }}>
-                      <span>💱</span>
-                    </div>
-                    <div className="setting-info">
-                      <div className="setting-row-title">Currency</div>
-                      <div className="setting-row-desc">Currently set to Indian Rupee (₹)</div>
-                    </div>
-                    <button className="setting-btn-sm">₹ INR</button>
-                  </div>
-                  <div className="setting-row">
-                    <div className="setting-icon-wrap" style={{ background:"rgba(74,222,128,.08)" }}>
-                      <span>🌐</span>
-                    </div>
-                    <div className="setting-info">
-                      <div className="setting-row-title">Language</div>
-                      <div className="setting-row-desc">Currently set to English</div>
-                    </div>
-                    <button className="setting-btn-sm">English</button>
-                  </div>
-                </div>
-
-                {/* Danger Zone */}
-                <div className="danger-zone">
-                  <div className="danger-title">⚠ Danger Zone</div>
-                  <p className="danger-desc">
-                    Permanently delete your account and all associated data. This action cannot be undone.
-                  </p>
-                  <button className="btn-danger"
-                    onClick={() => { if (window.confirm("Are you sure? This cannot be undone.")) showToast("❌ Account deletion requested."); }}>
-                    Delete My Account
-                  </button>
-                </div>
-              </div>
-            )}
-
           </main>
         </div>
       </div>
     </>
-  );
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function ProductCard({ order }: { order: MongoOrder }) {
-  const sc = STATUS_COLORS[order.status] ?? STATUS_COLORS["Pending"];
-  return (
-    <div className="product-card">
-      <div className="product-img-wrap">
-        <span className="product-img-placeholder">🏗</span>
-        <span className="product-status-pill"
-          style={{ background: sc.bg, color: sc.color, border:`1px solid ${sc.color}30` }}>
-          {order.status}
-        </span>
-      </div>
-      <div className="product-body">
-        <div className="product-name">{order.product}</div>
-        <div className="product-meta">
-          <span className="product-price">{order.amount}</span>
-          <span className="product-date">{new Date(order.createdAt).toLocaleDateString("en-IN")}</span>
-        </div>
-        <div style={{ fontSize:"11px", color:"#666", marginBottom:"8px" }}>
-          Qty: {order.quantity} · #{order.orderId}
-        </div>
-        <div className="product-actions">
-          <button className="product-btn product-btn-primary">View Details</button>
-          <button className="product-btn product-btn-outline">Buy Again</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OrderItem({ order, expanded, onToggle }: { order: MongoOrder; expanded: boolean; onToggle: () => void }) {
-  const sc       = STATUS_COLORS[order.status] ?? STATUS_COLORS["Pending"];
-  const stageIdx = STATUS_TO_STAGE[order.status] ?? 0;
-  const isCustom = order.isCustomized === true;
-
-  const deliveryDate = order.status === "Delivered"
-    ? new Date(new Date(order.createdAt).getTime() + 7 * 86400000).toLocaleDateString("en-IN",{ weekday:"long", day:"numeric", month:"long" })
-    : new Date(new Date(order.createdAt).getTime() + 14 * 86400000).toLocaleDateString("en-IN",{ weekday:"long", day:"numeric", month:"long" });
-
-  return (
-    <div className="order-item">
-      <div className="order-header" onClick={onToggle}>
-        <div className="order-thumb">🏗</div>
-        <div className="order-info">
-          <div className="order-product">{order.product}</div>
-          <div className="order-meta-row">
-            <span className="order-id">{order.orderId}</span>
-            <span className="order-price">{order.amount}</span>
-            <span className="order-date">{new Date(order.createdAt).toLocaleDateString("en-IN")}</span>
-            {isCustom && <span className="customized-tag">✦ Customized</span>}
-            <span style={{ ...sc, padding:"2px 8px", borderRadius:"999px", fontSize:"10px",
-              fontWeight:700, background: sc.bg, color: sc.color, border:`1px solid ${sc.color}30` }}>
-              ● {order.status}
-            </span>
-          </div>
-        </div>
-        <span className={`order-chevron ${expanded ? "open" : ""}`}>⌄</span>
-      </div>
-
-      {expanded && (
-        <div className="order-expanded">
-          {/* Progress Tracker */}
-          <div className="tracker-wrap">
-            <div className="tracker-title">Order Progress</div>
-            <div className="tracker-stages">
-              {ORDER_STAGES.map((s, i) => (
-                <div
-                  key={s.key}
-                  className={`tracker-stage ${i <= stageIdx ? "done" : ""} ${i === stageIdx ? "current" : ""}`}
-                >
-                  <div className="tracker-dot">{i <= stageIdx ? s.icon : "○"}</div>
-                  <div className="tracker-label">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Details grid */}
-          <div className="order-details-grid">
-            <div className="detail-chip">
-              <div className="detail-chip-label">Quantity</div>
-              <div className="detail-chip-value">{order.quantity}</div>
-            </div>
-            <div className="detail-chip">
-              <div className="detail-chip-label">Total Amount</div>
-              <div className="detail-chip-value">{order.amount}</div>
-            </div>
-            <div className="detail-chip">
-              <div className="detail-chip-label">Order Date</div>
-              <div className="detail-chip-value">{new Date(order.createdAt).toLocaleDateString("en-IN",{ day:"numeric", month:"long", year:"numeric" })}</div>
-            </div>
-            <div className="detail-chip">
-              <div className="detail-chip-label">{order.status === "Delivered" ? "Delivered On" : "Expected By"}</div>
-              <div className="detail-chip-value" style={{ color: order.status === "Delivered" ? "#4ADE80" : "#FBbF24" }}>
-                {deliveryDate}
-              </div>
-            </div>
-          </div>
-
-          {/* Customized details */}
-          {isCustom && order.customDetails && (
-            <div className="customized-details-box">
-              <div className="custom-box-title">
-                <span>✦</span> Customization Details
-              </div>
-              <div className="custom-row">
-                {Object.entries(order.customDetails).map(([k, v]) => (
-                  <div className="custom-field" key={k}>
-                    <div className="custom-field-label">{k}</div>
-                    <div className="custom-field-value">{v as string}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ProjectCard({ project }: { project: Project }) {
-  const [expanded, setExpanded] = useState(false);
-  const statusConf = {
-    completed: { color:"#4ADE80", bg:"rgba(74,222,128,.12)", label:"✅ Completed" },
-    ongoing:   { color:"#FBbF24", bg:"rgba(251,191,36,.12)",  label:"🔄 Ongoing"   },
-    planning:  { color:"#60A5FA", bg:"rgba(96,165,250,.12)",  label:"📋 Planning"  },
-  }[project.status];
-
-  const progressColor = project.status === "completed" ? "#4ADE80"
-    : project.status === "ongoing" ? "#d4a017" : "#60A5FA";
-
-  return (
-    <div className="project-card">
-      <div className="project-top">
-        <div className="project-icon-wrap"
-          style={{ background: project.type === "customized" ? "rgba(168,85,247,.12)" : "rgba(212,160,23,.1)" }}>
-          {project.type === "customized" ? "✦" : "🏗"}
-        </div>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div className="project-name">{project.title}</div>
-          <div className="project-desc">{project.description}</div>
-          <div className="project-tags">
-            <span className="project-tag"
-              style={{ background: statusConf.bg, color: statusConf.color, border:`1px solid ${statusConf.color}30` }}>
-              {statusConf.label}
-            </span>
-            {project.type === "customized" && (
-              <span className="project-tag"
-                style={{ background:"rgba(168,85,247,.12)", color:"#a855f7", border:"1px solid rgba(168,85,247,.25)" }}>
-                ✦ Customized
-              </span>
-            )}
-            <span className="project-tag"
-              style={{ background:"rgba(212,160,23,.08)", color:"#d4a017", border:"1px solid rgba(212,160,23,.2)" }}>
-              💰 {project.value}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="project-meta">
-        <span className="project-meta-item">📍 {project.location}</span>
-        <span className="project-meta-item">📅 Started: {new Date(project.startDate).toLocaleDateString("en-IN",{ month:"short", year:"numeric" })}</span>
-        {project.completedDate && (
-          <span className="project-meta-item" style={{ color:"#4ADE80" }}>
-            ✅ Completed: {new Date(project.completedDate).toLocaleDateString("en-IN",{ month:"short", year:"numeric" })}
-          </span>
-        )}
-      </div>
-
-      {/* Progress bar */}
-      <div className="project-progress-wrap">
-        <div className="project-progress-label">
-          <span>Progress</span>
-          <span style={{ color: progressColor, fontWeight:700 }}>{project.progress}%</span>
-        </div>
-        <div className="project-progress-bar">
-          <div className="project-progress-fill"
-            style={{ background:`linear-gradient(90deg,${progressColor},${progressColor}88)`, "--w":`${project.progress}%` } as React.CSSProperties} />
-        </div>
-      </div>
-
-      {/* Customized details expandable */}
-      {project.type === "customized" && project.customDetails && (
-        <div className="project-custom-section">
-          <button onClick={() => setExpanded(!expanded)} style={{
-            background:"rgba(168,85,247,.08)", border:"1px solid rgba(168,85,247,.2)",
-            color:"#a855f7", padding:"7px 14px", borderRadius:"8px", fontSize:"12px",
-            fontWeight:600, cursor:"pointer", marginBottom: expanded ? "12px" : 0,
-          }}>
-            {expanded ? "▲ Hide" : "▼ View"} Customization Details
-          </button>
-
-          {expanded && (
-            <div className="customized-details-box">
-              <div className="custom-box-title"><span>✦</span> Finalized Customization</div>
-              <div className="custom-row">
-                {[
-                  { label:"Specifications", val: project.customDetails.specifications },
-                  { label:"Materials",       val: project.customDetails.materials      },
-                  { label:"Agreed Terms",    val: project.customDetails.agreedTerms    },
-                  { label:"Owner Notes",     val: project.customDetails.ownerNotes     },
-                ].map(f => (
-                  <div className="custom-field" key={f.label}>
-                    <div className="custom-field-label">{f.label}</div>
-                    <div className="custom-field-value">{f.val}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MiniProjectRow({ project }: { project: Project }) {
-  return (
-    <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px",
-      background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.05)",
-      borderRadius:"10px" }}>
-      <div style={{ fontSize:"20px" }}>{project.type === "customized" ? "✦" : "🏗"}</div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:"13px", fontWeight:600, color:"#e8e8e8", marginBottom:"4px",
-          whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{project.title}</div>
-        <div style={{ height:"4px", background:"rgba(255,255,255,.06)", borderRadius:"999px", overflow:"hidden" }}>
-          <div style={{ height:"100%", width:`${project.progress}%`, background:"linear-gradient(90deg,#d4a017,#f0c040)", borderRadius:"999px" }} />
-        </div>
-      </div>
-      <span style={{ fontSize:"12px", fontWeight:700, color:"#d4a017" }}>{project.progress}%</span>
-    </div>
-  );
-}
-
-function ToggleSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <button className={`setting-toggle ${on ? "on" : "off"}`} onClick={onToggle}>
-      <div className="toggle-thumb" />
-    </button>
-  );
-}
-
-function EmptyState({ icon, text }: { icon: string; text: string }) {
-  return (
-    <div style={{ textAlign:"center", padding:"48px 24px" }}>
-      <div style={{ fontSize:"40px", marginBottom:"12px" }}>{icon}</div>
-      <p style={{ color:"#666", fontSize:"14px" }}>{text}</p>
-    </div>
   );
 }

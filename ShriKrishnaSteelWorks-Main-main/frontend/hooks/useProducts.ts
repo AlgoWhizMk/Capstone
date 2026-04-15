@@ -23,6 +23,7 @@ export interface ApiProduct {
   loadCapacityKg: number;
   warrantyYears: number;
   customizationAvailable: string;
+  imageUrl: string;
   length_cm: number;
   width_cm: number;
   height_cm: number;

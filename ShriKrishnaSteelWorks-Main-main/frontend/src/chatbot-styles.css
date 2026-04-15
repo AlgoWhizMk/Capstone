@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   KrishnaBot — Professional Chat Widget
-   Uses the same design tokens as skw-styles.css
+   KrishnaBot AI — Advanced Chat Widget
+   ML-powered: intent detection · sentiment analysis · smart suggestions
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap');
@@ -66,11 +66,11 @@
   position: fixed;
   bottom: 5.5rem;
   right: 2rem;
-  width: 380px;
+  width: 390px;
   max-width: calc(100vw - 2rem);
-  height: 540px;
+  height: 580px;
   max-height: calc(100vh - 9rem);
-  border-radius: 16px;
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
   z-index: 9997;
@@ -80,7 +80,8 @@
   border: 1px solid rgba(74,144,217,0.2);
   box-shadow:
     0 24px 64px rgba(0,0,0,0.7),
-    0 0 0 1px rgba(255,255,255,0.04);
+    0 0 0 1px rgba(255,255,255,0.04),
+    0 0 80px rgba(74,144,217,0.05);
   transform-origin: bottom right;
   animation: skwChatOpen 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
@@ -103,20 +104,21 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.875rem 1rem;
-  background: rgba(11, 31, 58, 0.6);
+  background: rgba(11, 31, 58, 0.7);
   border-bottom: 1px solid rgba(74,144,217,0.15);
   flex-shrink: 0;
 }
 .skw-chat-header-icon {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #4A90D9, #5BA3EE);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   color: #fff;
+  box-shadow: 0 4px 12px rgba(74,144,217,0.3);
 }
 .skw-chat-header-info { flex: 1; min-width: 0; }
 .skw-chat-header-name {
@@ -126,6 +128,21 @@
   letter-spacing: 0.04em;
   color: #F5F7FA;
   line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.skw-ai-badge {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #4A90D9;
+  background: rgba(74,144,217,0.12);
+  border: 1px solid rgba(74,144,217,0.3);
+  padding: 0.08em 0.4em;
+  border-radius: 4px;
+  vertical-align: middle;
 }
 .skw-chat-header-status {
   font-family: 'Inter', sans-serif;
@@ -171,6 +188,25 @@
   background: rgba(74,144,217,0.08);
 }
 
+/* ── Sentiment awareness bar ─────────────────────────────────────────────── */
+.skw-sentiment-bar {
+  padding: 0.4rem 1rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+  animation: skwMsgIn 0.25s ease;
+}
+.skw-sentiment-negative {
+  background: rgba(239,68,68,0.07);
+  border-bottom: 1px solid rgba(239,68,68,0.15);
+  color: #FCA5A5;
+}
+.skw-sentiment-urgent {
+  background: rgba(251,191,36,0.08);
+  border-bottom: 1px solid rgba(251,191,36,0.2);
+  color: #FDE68A;
+}
+
 /* ── Messages Area ───────────────────────────────────────────────────────── */
 .skw-chat-messages {
   flex: 1;
@@ -196,12 +232,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 .skw-chat-welcome-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   background: rgba(74,144,217,0.1);
   border: 1px solid rgba(74,144,217,0.25);
   display: flex;
@@ -209,14 +245,18 @@
   justify-content: center;
   margin-bottom: 0.25rem;
   color: #4A90D9;
+  box-shadow: 0 0 24px rgba(74,144,217,0.15);
 }
 .skw-chat-welcome h4 {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #F5F7FA;
   letter-spacing: 0.03em;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .skw-chat-welcome p {
   font-family: 'Inter', sans-serif;
@@ -225,6 +265,36 @@
   margin: 0;
   line-height: 1.55;
   max-width: 260px;
+}
+.skw-welcome-chips {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+  width: 100%;
+  max-width: 260px;
+}
+.skw-welcome-chip {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.72rem;
+  color: #4A90D9;
+  background: rgba(74,144,217,0.08);
+  border: 1px solid rgba(74,144,217,0.25);
+  padding: 0.38rem 0.5rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.skw-welcome-chip:hover {
+  background: rgba(74,144,217,0.18);
+  border-color: #4A90D9;
+  color: #F5F7FA;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(74,144,217,0.2);
 }
 
 /* ── Message Row ─────────────────────────────────────────────────────────── */
@@ -261,7 +331,7 @@
 }
 
 /* ── Bubble ──────────────────────────────────────────────────────────────── */
-.skw-chat-bubble-wrap { display: flex; flex-direction: column; max-width: 80%; gap: 0.2rem; }
+.skw-chat-bubble-wrap { display: flex; flex-direction: column; max-width: 82%; gap: 0.25rem; }
 .skw-chat-row.user .skw-chat-bubble-wrap { align-items: flex-end; }
 
 .skw-chat-bubble {
@@ -294,29 +364,73 @@
   font-family: 'Inter', sans-serif;
   font-size: 0.62rem;
   color: rgba(143,168,192,0.6);
-  padding: 0 0.25rem;
+  padding: 0 0.15rem;
 }
 
-/* Copy button */
-.skw-bubble-copy {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.3rem;
-  background: rgba(11,31,58,0.9);
-  border: 1px solid rgba(74,144,217,0.2);
-  color: #8FA8C0;
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  display: none;
+/* ── AI Confidence badge ─────────────────────────────────────────────────── */
+.skw-confidence-badge {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  transition: all 0.15s;
+  gap: 0.2rem;
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  cursor: help;
+  opacity: 0.85;
+  transition: opacity 0.15s;
 }
-.skw-chat-row.bot .skw-chat-bubble:hover .skw-bubble-copy { display: flex; }
-.skw-bubble-copy:hover { border-color: rgba(74,144,217,0.5); color: #4A90D9; }
+.skw-confidence-badge:hover { opacity: 1; }
+
+/* ── Follow-up AI suggestion chips ──────────────────────────────────────── */
+.skw-followup-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+  animation: skwMsgIn 0.3s ease 0.1s both;
+}
+.skw-followup-chip {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.68rem;
+  color: #8FA8C0;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(74,144,217,0.2);
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+  text-align: left;
+}
+.skw-followup-chip:hover {
+  border-color: rgba(74,144,217,0.55);
+  color: #F5F7FA;
+  background: rgba(74,144,217,0.09);
+  transform: translateY(-1px);
+}
+
+/* Inline copy button */
+.skw-bubble-copy-inline {
+  background: none;
+  border: none;
+  color: rgba(143,168,192,0.45);
+  cursor: pointer;
+  padding: 0.1rem 0.25rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  transition: all 0.15s;
+  line-height: 1;
+}
+.skw-bubble-copy-inline:hover {
+  color: #4A90D9;
+  background: rgba(74,144,217,0.08);
+}
 
 /* ── Typing indicator ─────────────────────────────────────────────────────── */
 .skw-chat-typing {
@@ -334,6 +448,13 @@
   gap: 4px;
   align-items: center;
 }
+.skw-typing-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.65rem;
+  color: rgba(143,168,192,0.6);
+  margin-left: 0.4rem;
+  letter-spacing: 0.02em;
+}
 .skw-tdot {
   width: 6px;
   height: 6px;
@@ -349,67 +470,98 @@
   40%            { transform: translateY(-6px); opacity: 1; }
 }
 
-/* ── Quick Chips ─────────────────────────────────────────────────────────── */
-.skw-chat-chips {
-  padding: 0.5rem 1rem 0.4rem;
+/* ── Input Area Wrapper — always pinned to the bottom ───────────────────── */
+.skw-chat-input-area {
+  flex-shrink: 0;           /* never shrink — always stays at the bottom */
+  flex-grow: 0;             /* never grow into message area space */
   display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  border-top: 1px solid rgba(74,144,217,0.1);
-  flex-shrink: 0;
-}
-.skw-chat-chip {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: #8FA8C0;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(74,144,217,0.18);
-  padding: 0.28rem 0.7rem;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.18s;
-  white-space: nowrap;
-}
-.skw-chat-chip:hover {
-  border-color: #4A90D9;
-  color: #F5F7FA;
-  background: rgba(74,144,217,0.1);
+  flex-direction: column;
+  margin-top: auto;         /* forces it to snap to the very bottom */
+  border-top: 1px solid rgba(74,144,217,0.15);
+  background: rgba(9, 25, 50, 0.6);
+  position: relative;
+  z-index: 2;
 }
 
-/* ── Input Area ──────────────────────────────────────────────────────────── */
+/* ── Autocomplete dropdown ───────────────────────────────────────────────── */
+.skw-autocomplete {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(9, 25, 50, 0.98);
+  border: 1px solid rgba(74,144,217,0.25);
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+  animation: skwMsgIn 0.15s ease;
+  z-index: 10;
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.4);
+}
+.skw-autocomplete-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4A90D9;
+  padding: 0.4rem 0.85rem 0.2rem;
+  opacity: 0.7;
+}
+.skw-autocomplete-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid rgba(74,144,217,0.07);
+  color: #8FA8C0;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.skw-autocomplete-item:hover {
+  background: rgba(74,144,217,0.09);
+  color: #F5F7FA;
+  padding-left: 1.1rem;
+}
+
+/* ── Input row ───────────────────────────────────────────────────────────── */
 .skw-chat-input-row {
   display: flex;
   gap: 0.5rem;
-  align-items: flex-end;
-  padding: 0.75rem 1rem;
-  border-top: 1px solid rgba(74,144,217,0.12);
-  background: rgba(11,31,58,0.4);
-  flex-shrink: 0;
+  align-items: center;   /* vertically center mic, textarea, and send */
+  padding: 0.65rem 0.85rem 0.55rem;
 }
 .skw-chat-textarea {
   flex: 1;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(74,144,217,0.2);
-  border-radius: 8px;
-  padding: 0.55rem 0.8rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(74,144,217,0.22);
+  border-radius: 10px;
+  padding: 0.52rem 0.85rem;
   color: #F5F7FA;
   font-family: 'Inter', sans-serif;
   font-size: 0.82rem;
   resize: none;
   min-height: 38px;
   max-height: 90px;
+  height: 38px;         /* default single-line height */
   outline: none;
   line-height: 1.5;
-  transition: border-color 0.18s;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  display: block;
+  box-sizing: border-box;
+  overflow-y: hidden;   /* hide scrollbar at default height */
+  align-self: center;   /* center in flex row */
 }
-.skw-chat-textarea::placeholder { color: rgba(143,168,192,0.55); }
+.skw-chat-textarea::placeholder { color: rgba(143,168,192,0.5); }
 .skw-chat-textarea:focus {
-  border-color: rgba(74,144,217,0.5);
-  box-shadow: 0 0 0 3px rgba(74,144,217,0.08);
+  border-color: rgba(74,144,217,0.6);
+  box-shadow: 0 0 0 3px rgba(74,144,217,0.1);
+  overflow-y: auto;     /* show scrollbar when multiline */
 }
-.skw-chat-textarea:disabled { opacity: 0.55; }
+.skw-chat-textarea:disabled { opacity: 0.5; }
 
 .skw-chat-mic {
   width: 38px;
@@ -442,7 +594,7 @@
   height: 38px;
   border-radius: 8px;
   border: none;
-  background: #4A90D9;
+  background: linear-gradient(135deg, #4A90D9, #5BA3EE);
   color: #fff;
   cursor: pointer;
   display: flex;
@@ -450,25 +602,85 @@
   justify-content: center;
   flex-shrink: 0;
   font-family: inherit;
-  transition: all 0.18s;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(74,144,217,0.3);
 }
 .skw-chat-send:hover:not(:disabled) {
-  background: #5BA3EE;
+  background: linear-gradient(135deg, #5BA3EE, #6BB5FF);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(74,144,217,0.4);
+  box-shadow: 0 6px 16px rgba(74,144,217,0.4);
 }
-.skw-chat-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.skw-chat-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
-/* ── Mobile ──────────────────────────────────────────────────────────────── */
-@media (max-width: 480px) {
-  .skw-chat-panel {
-    right: 0.75rem;
-    bottom: 5rem;
-    width: calc(100vw - 1.5rem);
-    height: calc(100svh - 7.5rem);
-    border-radius: 14px;
-  }
-  .skw-chat-fab { bottom: 1rem; right: 0.75rem; width: 46px; height: 46px; }
+/* ── AI footer label ─────────────────────────────────────────────────────── */
+.skw-input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.9rem 0.45rem;
+}
+.skw-input-footer-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.6rem;
+  color: rgba(143,168,192,0.4);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  letter-spacing: 0.02em;
+}
+
+/* ── Price Trend Panel ───────────────────────────────────────────────────── */
+.skw-trend-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 0.75rem 1rem;
+  gap: 0.65rem;
+  animation: skwMsgIn 0.2s ease;
+}
+.skw-trend-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.66rem;
+  color: rgba(232,184,75,0.6);
+  letter-spacing: 0.04em;
+  margin-top: -0.3rem;
+  padding: 0 1rem;
+}
+.skw-trend-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(74,144,217,0.12);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.skw-trend-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #F5F7FA;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.skw-trend-up   { color: #4ADE80; font-size: 0.72rem; }
+.skw-trend-down { color: #F87171; font-size: 0.72rem; }
+.skw-trend-value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4A90D9;
+}
+.skw-trend-note {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.65rem;
+  color: rgba(143,168,192,0.5);
+  text-align: center;
+  padding: 0.3rem 0;
+  border-top: 1px solid rgba(74,144,217,0.08);
+  margin-top: 0.25rem;
 }
 
 /* ── Question Bank Panel ────────────────────────────────────────────────── */
@@ -524,21 +736,44 @@
   padding-left: 1.3rem;
 }
 
-/* ── Inline copy button (below bubble) ─────────────────────────────────── */
-.skw-bubble-copy-inline {
-  background: none;
-  border: none;
-  color: rgba(143,168,192,0.45);
-  cursor: pointer;
-  padding: 0.1rem 0.25rem;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.7rem;
-  transition: all 0.15s;
-  line-height: 1;
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .skw-chat-panel {
+    right: 0.75rem;
+    bottom: 5rem;
+    width: calc(100vw - 1.5rem);
+    height: calc(100svh - 7.5rem);
+    border-radius: 14px;
+  }
+  .skw-chat-fab { bottom: 1rem; right: 0.75rem; width: 46px; height: 46px; }
+  .skw-followup-chips { gap: 0.3rem; }
 }
-.skw-bubble-copy-inline:hover {
-  color: #4A90D9;
-  background: rgba(74,144,217,0.08);
+
+/* ── Quick Chips (legacy, kept for compatibility) ────────────────────────── */
+.skw-chat-chips {
+  padding: 0.5rem 1rem 0.4rem;
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(74,144,217,0.1);
+  flex-shrink: 0;
+}
+.skw-chat-chip {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #8FA8C0;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(74,144,217,0.18);
+  padding: 0.28rem 0.7rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.skw-chat-chip:hover {
+  border-color: #4A90D9;
+  color: #F5F7FA;
+  background: rgba(74,144,217,0.1);
 }

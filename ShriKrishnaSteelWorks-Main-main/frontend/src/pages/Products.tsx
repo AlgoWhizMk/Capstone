@@ -50,6 +50,7 @@ type MappedProduct = {
   warranty: string; finish: string; specs: Record<string, string>;
   sizes: string[]; highlights: string[]; applications: string[];
   customizable: boolean;
+  imageUrl: string;
 };
 
 const CUSTOMIZE_FIELDS = [
@@ -103,7 +104,6 @@ export default function Products() {
   const [customizeForm, setCustomizeForm] = useState<Record<string, string>>({});
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [cartItems, setCartItems] = useState<string[]>([]);
-  const [cartNotif, setCartNotif] = useState<{ name: string } | null>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"specs" | "sizes" | "highlights" | "applications">("specs");
   const [heroLoaded, setHeroLoaded] = useState(false);
@@ -162,6 +162,7 @@ export default function Products() {
       highlights: (p.features || "").split(",").map((f: string) => f.trim()).filter(Boolean),
       applications: [p.usageArea, p.recommendedFor].filter(Boolean) as string[],
       customizable: p.customizationAvailable === "Yes",
+      imageUrl: p.imageUrl || `https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=70`,
     };
   });
 
@@ -192,8 +193,6 @@ export default function Products() {
 
   function addToCart(p: MappedProduct) {
     setCartItems(prev => [...prev, p.id]);
-    setCartNotif({ name: p.name });
-    setTimeout(() => setCartNotif(null), 3200);
   }
 
   const particles = Array.from({ length: 26 }, (_, i) => ({
@@ -541,14 +540,7 @@ export default function Products() {
       {/* Cursor */}
       <div className="xcursor" style={{ left: cursorPos.x, top: cursorPos.y }} />
 
-      {/* Toast */}
-      {cartNotif && (
-        <div className="xtoast">
-          <span className="xtoast-ico">🛒</span>
-          <div><div className="xtoast-h">Added to Cart</div><div className="xtoast-s">{cartNotif.name}</div></div>
-          <div className="xtoast-bar" />
-        </div>
-      )}
+      {/* Toast removed - cart no longer used */}
 
       {/* ═══════════════ HERO ═══════════════ */}
       <section className="xhero" ref={heroSectionRef}>
@@ -689,7 +681,7 @@ export default function Products() {
 
                     <div className="xcard-img">
                       <img
-                        src={`https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=70&sig=${i % 12}`}
+                        src={product.imageUrl}
                         alt={product.name} loading="lazy"
                       />
                       <div className="xcard-shade" />
@@ -743,10 +735,6 @@ export default function Products() {
                           onClick={() => { setCustomizeProduct(product); setCustomizeForm({}); setUploadedFiles([]); }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
                         </button>
-                        <button className="xicobtn cart" title="Add to Cart" onClick={() => addToCart(product)}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>
-                          {cartCount > 0 && <span className="xcart-badge">{cartCount}</span>}
-                        </button>
                       </div>
                     </div>
                     <div className="xcard-bar" style={{ background: `linear-gradient(90deg,${product.accentColor},transparent)` }} />
@@ -793,7 +781,7 @@ export default function Products() {
             <div className="xmod-bar" style={{ background: detailProduct.accentColor }} />
             <div className="xdmod-top">
               <div className="xdmod-imgbox">
-                <img src="https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80" alt={detailProduct.name} />
+                <img src={detailProduct.imageUrl} alt={detailProduct.name} />
                 <div className="xdmod-imgtag" style={{ background: detailProduct.accentColor }}>{detailProduct.tag}</div>
               </div>
               <div className="xdmod-info">
@@ -860,11 +848,9 @@ export default function Products() {
               )}
             </div>
             <div className="xmod-footer">
-              <button className="xmf-btn cart" style={{ background: detailProduct.accentColor }}
-                onClick={() => { addToCart(detailProduct); setDetailProduct(null); }}>🛒 Add to Cart</button>
               <button className="xmf-btn cust"
                 onClick={() => { setCustomizeProduct(detailProduct); setDetailProduct(null); setCustomizeForm({}); setUploadedFiles([]); }}>⚙️ Customize</button>
-              <Link to="/contact" className="xmf-link" onClick={() => setDetailProduct(null)}>Get Quote →</Link>
+              <Link to="/contact" className="xmf-link" onClick={() => setDetailProduct(null)}>📋 Get Quotation →</Link>
             </div>
           </div>
         </div>

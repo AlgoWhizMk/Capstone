@@ -1,8 +1,10 @@
+// src/App.tsx
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import ChatBot from "./components/ChatBot";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Products from "./pages/Products";
@@ -11,6 +13,8 @@ import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import UserDashboard from "./pages/UserDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import Analytics from "./pages/Analytics";
+import AiMl from "./pages/AiMl";
 import { useEffect } from "react";
 
 // Scroll to top on route change
@@ -35,17 +39,44 @@ function App() {
       <AuthProvider>
         <Navbar />
         <Routes>
-          <Route path="/"          element={<Home />} />
-          <Route path="/home"      element={<Home />} />
-          <Route path="/about"     element={<About />} />
-          <Route path="/products"  element={<Products />} />
-          <Route path="/projects"  element={<Projects />} />
-          <Route path="/contact"   element={<Contact />} />
-          <Route path="/cart"      element={<Cart />} />
-          <Route path="/login"     element={<Auth />} />
-          <Route path="/signup"    element={<Auth />} />
-          <Route path="/dashboard" element={<UserDashboard />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          {/* Public routes */}
+          <Route path="/"         element={<Home />} />
+          <Route path="/home"     element={<Home />} />
+          <Route path="/about"    element={<About />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/contact"  element={<Contact />} />
+          <Route path="/cart"     element={<Cart />} />
+          <Route path="/login"    element={<Auth />} />
+          <Route path="/signup"   element={<Auth />} />
+
+          {/* Authenticated user routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <UserDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Admin-only routes */}
+          <Route path="/projects" element={
+            <ProtectedRoute requireAdmin>
+              <Projects />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/dashboard" element={
+            <ProtectedRoute requireAdmin>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/analytics" element={
+            <ProtectedRoute requireAdmin>
+              <Analytics />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/ai-ml" element={
+            <ProtectedRoute requireAdmin>
+              <AiMl />
+            </ProtectedRoute>
+          } />
         </Routes>
         <Footer />
         <ChatBot />

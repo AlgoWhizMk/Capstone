@@ -8,15 +8,22 @@ import {
   getAllUsers,
   getUser,
   updateUser,
+  updateOrderStatus,
+  deleteOrder,
+  createOrder,
+  updateUserRole,
+  deleteUser,
+  getProducts,
+  deleteProduct,
 } from "../services/api";
 import type {
-  MongoUser, MongoOrder,
+  MongoUser, MongoOrder, MongoProduct,
 } from "../services/api";
 import ProjectDetailModal from "../components/ProjectDetailModal";
 import type { ProjectDetailData } from "../components/ProjectDetailModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Tab = "overview" | "orders" | "projects" | "users" | "profile" | "settings";
+type Tab = "overview" | "orders" | "projects" | "users" | "products" | "profile" | "settings";
 
 type EditProfileForm = {
   name: string;
@@ -606,6 +613,7 @@ export default function AdminDashboard() {
   const [mongoUser, setMongoUser]     = useState<MongoUser | null>(null);
   const [orders,    setOrders]        = useState<MongoOrder[]>([]);
   const [users,     setUsers]         = useState<MongoUser[]>([]);
+  const [products,  setProducts]      = useState<MongoProduct[]>([]);
   const [loadingUser,  setLoadingUser]    = useState(true);
   const [loadingOrders,setLoadingOrders]  = useState(true);
   const [error,        setError]          = useState("");
@@ -614,6 +622,11 @@ export default function AdminDashboard() {
   const [editMode,     setEditMode]       = useState(false);
   const [saving,       setSaving]         = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectDetailData | null>(null);
+  const [orderSearch, setOrderSearch]     = useState("");
+  const [orderFilter, setOrderFilter]     = useState("All");
+  const [userSearch, setUserSearch]       = useState("");
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
+  const [newOrder, setNewOrder]           = useState({ firebaseUid:"", product:"", quantity:"", amount:"" });
 
   // Settings toggles
   const [settings, setSettings] = useState<DashboardSettings>({
@@ -633,7 +646,7 @@ export default function AdminDashboard() {
   // Read tab from URL hash
   useEffect(() => {
     const hash = location.hash.replace("#", "") as Tab;
-    if (["overview","orders","projects","users","profile","settings"].includes(hash)) {
+    if (["overview","orders","projects","users","products","profile","settings"].includes(hash)) {
       setActiveTab(hash);
     }
   }, [location.hash]);
@@ -655,18 +668,93 @@ export default function AdminDashboard() {
       .finally(() => setLoadingUser(false));
   }, [user?.uid]);
 
-  // Fetch all orders and users
+  // Fetch all orders, users, and products
   useEffect(() => {
     if (!user) return;
     setLoadingOrders(true);
-    Promise.all([getAllOrders(), getAllUsers()])
-      .then(([ordersData, usersData]) => {
+    Promise.all([getAllOrders(), getAllUsers(), getProducts(1, 200)])
+      .then(([ordersData, usersData, productsData]) => {
         setOrders(ordersData);
         setUsers(usersData);
+        setProducts(productsData.products || []);
       })
       .catch(console.error)
       .finally(() => setLoadingOrders(false));
   }, [user]);
+
+  // ── Admin CRUD handlers ──
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      const updated = await updateOrderStatus(orderId, newStatus);
+      setOrders(prev => prev.map(o => o.orderId === orderId ? { ...o, status: updated.status } : o));
+      showToast(`✅ Order ${orderId} → ${newStatus}`);
+    } catch { showToast("❌ Failed to update status"); }
+  };
+
+  const handleDeleteOrder = async (id: string, oid: string) => {
+    if (!window.confirm(`Delete order ${oid}? This cannot be undone.`)) return;
+    try {
+      await deleteOrder(id);
+      setOrders(prev => prev.filter(o => o._id !== id));
+      showToast(`✅ Order ${oid} deleted`);
+    } catch { showToast("❌ Failed to delete order"); }
+  };
+
+  const handleCreateOrder = async () => {
+    if (!newOrder.product || !newOrder.quantity || !newOrder.amount) {
+      showToast("❌ Fill all fields"); return;
+    }
+    try {
+      const uid = newOrder.firebaseUid || user?.uid || "";
+      const created = await createOrder({ ...newOrder, firebaseUid: uid });
+      setOrders(prev => [created, ...prev]);
+      setShowCreateOrder(false);
+      setNewOrder({ firebaseUid:"", product:"", quantity:"", amount:"" });
+      showToast("✅ Order created!");
+    } catch { showToast("❌ Failed to create order"); }
+  };
+
+  const handleRoleToggle = async (u: MongoUser) => {
+    const newRole = u.role === "admin" ? "user" : "admin";
+    if (!window.confirm(`Change ${u.name} to ${newRole}?`)) return;
+    try {
+      await updateUserRole(u.firebaseUid, newRole as "user"|"admin");
+      setUsers(prev => prev.map(x => x.firebaseUid === u.firebaseUid ? { ...x, role: newRole as "user"|"admin" } : x));
+      showToast(`✅ ${u.name} is now ${newRole}`);
+    } catch { showToast("❌ Failed to update role"); }
+  };
+
+  const handleDeleteUser = async (u: MongoUser) => {
+    if (!window.confirm(`Delete user ${u.name}? This cannot be undone.`)) return;
+    try {
+      await deleteUser(u.firebaseUid);
+      setUsers(prev => prev.filter(x => x._id !== u._id));
+      showToast(`✅ User ${u.name} deleted`);
+    } catch { showToast("❌ Failed to delete user"); }
+  };
+
+  const handleDeleteProduct = async (p: MongoProduct) => {
+    if (!window.confirm(`Delete product ${p.productName}?`)) return;
+    try {
+      await deleteProduct(p._id);
+      setProducts(prev => prev.filter(x => x._id !== p._id));
+      showToast(`✅ Product deleted`);
+    } catch { showToast("❌ Failed to delete product"); }
+  };
+
+  // Filtered data
+  const filteredOrders = orders.filter(o => {
+    const matchSearch = !orderSearch || o.product.toLowerCase().includes(orderSearch.toLowerCase())
+      || o.orderId.toLowerCase().includes(orderSearch.toLowerCase());
+    const matchFilter = orderFilter === "All" || o.status === orderFilter;
+    return matchSearch && matchFilter;
+  });
+
+  const filteredUsers = users.filter(u => {
+    if (!userSearch) return true;
+    const q = userSearch.toLowerCase();
+    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  });
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -695,7 +783,7 @@ export default function AdminDashboard() {
 
   const goTab = (tab: Tab) => {
     setActiveTab(tab);
-    navigate(`/dashboard#${tab}`, { replace: true });
+    navigate(`/admin/dashboard#${tab}`, { replace: true });
   };
 
   const displayName  = mongoUser?.name     ?? profile?.name    ?? user?.displayName ?? "User";
@@ -705,13 +793,17 @@ export default function AdminDashboard() {
   
   // Derived stats
   const inProgress = orders.filter(o => ["Pending", "Processing", "Shipped"].includes(o.status)).length;
+  const totalRevenue = orders.reduce((a,o) => a + (parseFloat(o.amount.replace(/[^0-9.]/g,'')) || 0), 0);
+  const deliveredCount = orders.filter(o => o.status === "Delivered").length;
+  const cancelledCount = orders.filter(o => o.status === "Cancelled").length;
 
   const tabs = [
-    { id: "overview"  as Tab, label: "Overview",   icon: "⊞" },
-    { id: "users"     as Tab, label: "Manage Users", icon: "👥", badge: users.length },
-    { id: "orders"    as Tab, label: "All Orders",   icon: "📦", badge: orders.length },
-    { id: "projects"  as Tab, label: "All Projects", icon: "🏗",  badge: MOCK_PROJECTS.length },
-    { id: "settings"  as Tab, label: "Settings",    icon: "⚙" },
+    { id: "overview"  as Tab, label: "Overview",      icon: "⊞" },
+    { id: "orders"    as Tab, label: "All Orders",    icon: "📦", badge: orders.length },
+    { id: "users"     as Tab, label: "Manage Users",  icon: "👥", badge: users.length },
+    { id: "products"  as Tab, label: "Products",      icon: "🏷", badge: products.length },
+    { id: "projects"  as Tab, label: "All Projects",  icon: "🏗",  badge: MOCK_PROJECTS.length },
+    { id: "settings"  as Tab, label: "Settings",      icon: "⚙" },
   ];
 
   if (loadingUser) return (
@@ -801,17 +893,19 @@ export default function AdminDashboard() {
 
             <div className="dash-header">
               <h1 className="dash-title">
-                {activeTab === "overview"  && `Admin Portal - Welcome ${displayName.split(" ")[0]} 👋`}
-                {activeTab === "orders"    && "All Customer Orders"}
-                {activeTab === "projects"  && "All Company Projects"}
-                {activeTab === "users"   && "Manage Registered Users"}
+                {activeTab === "overview"  && `Admin Portal — ${displayName.split(" ")[0]} 👋`}
+                {activeTab === "orders"    && "Order Management"}
+                {activeTab === "projects"  && "Project Management"}
+                {activeTab === "users"     && "User Management"}
+                {activeTab === "products"  && "Product Catalog"}
                 {activeTab === "settings"  && "System Settings"}
               </h1>
               <p className="dash-sub">
-                {activeTab === "overview"  && "Overview of ShriKrishna SteelWorks portal metrics."}
-                {activeTab === "orders"    && "Track and update statuses of all customer orders."}
+                {activeTab === "overview"  && "Business overview and quick actions for ShriKrishna SteelWorks."}
+                {activeTab === "orders"    && "Create, track, and update all customer orders."}
                 {activeTab === "projects"  && "Track ongoing and completed steel projects."}
-                {activeTab === "users"   && "View and manage all registered clients."}
+                {activeTab === "users"     && "Manage users, roles, and permissions."}
+                {activeTab === "products"  && `Manage your product catalog — ${products.length} products.`}
                 {activeTab === "settings"  && "Adjust system preferences."}
               </p>
             </div>
@@ -822,10 +916,10 @@ export default function AdminDashboard() {
                 {/* Stats */}
                 <div className="stats-grid">
                   {[
-                    { label:"Total Users",     val:String(users.length),    icon:"👥", color:"#4ADE80" },
-                    { label:"All Orders",      val:String(orders.length),   icon:"📦", color:"#60A5FA" },
-                    { label:"In Progress",     val:String(inProgress),      icon:"🔄", color:"#FBbF24" },
-                    { label:"All Projects",    val:String(MOCK_PROJECTS.length), icon:"🏗", color:"#4A90D9" },
+                    { label:"Total Revenue",   val:`₹${totalRevenue > 100000 ? (totalRevenue/100000).toFixed(1)+"L" : totalRevenue.toLocaleString()}`, icon:"💰", color:"#4ADE80" },
+                    { label:"Total Orders",    val:String(orders.length),   icon:"📦", color:"#60A5FA" },
+                    { label:"Active Users",    val:String(users.length),    icon:"👥", color:"#FBbF24" },
+                    { label:"Products",        val:String(products.length), icon:"🏷", color:"#A78BFA" },
                   ].map(s => (
                     <div className="stat-card" key={s.label}>
                       <div className="stat-icon" style={{ background: s.color + "18" }}>
@@ -839,7 +933,46 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
-                {/* Recent Orders as product cards */}
+                {/* Quick Actions */}
+                <div className="glass-card" style={{ padding:"16px 24px" }}>
+                  <div style={{ display:"flex", gap:"10px", flexWrap:"wrap" }}>
+                    {[
+                      { label:"+ New Order",  tab:"orders" as Tab,   color:"#4ADE80" },
+                      { label:"Manage Users", tab:"users" as Tab,    color:"#60A5FA" },
+                      { label:"Products",     tab:"products" as Tab, color:"#A78BFA" },
+                      { label:"Analytics BI", tab:null,              color:"#F59E0B" },
+                    ].map(a => (
+                      <button key={a.label} onClick={() => a.tab ? goTab(a.tab) : navigate("/admin/analytics")}
+                        style={{ background:a.color+"14", border:`1px solid ${a.color}30`, color:a.color,
+                          padding:"8px 16px", borderRadius:10, fontSize:12, fontWeight:600, cursor:"pointer",
+                          fontFamily:"'Inter',sans-serif" }}>
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Order Status Breakdown */}
+                <div className="glass-card">
+                  <div className="card-title">📊 Order Status Breakdown</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12 }}>
+                    {[
+                      { label:"Pending",    val:orders.filter(o=>o.status==="Pending").length,    color:"#F87171" },
+                      { label:"Processing", val:orders.filter(o=>o.status==="Processing").length, color:"#FBbF24" },
+                      { label:"Shipped",    val:orders.filter(o=>o.status==="Shipped").length,    color:"#60A5FA" },
+                      { label:"Delivered",  val:deliveredCount,                                   color:"#4ADE80" },
+                      { label:"Cancelled",  val:cancelledCount,                                   color:"#9CA3AF" },
+                    ].map(s => (
+                      <div key={s.label} style={{ textAlign:"center", padding:12, background:"rgba(255,255,255,.02)",
+                        border:"1px solid rgba(255,255,255,.05)", borderRadius:12 }}>
+                        <div style={{ fontSize:22, fontWeight:800, color:s.color, fontFamily:"'Rajdhani',sans-serif" }}>{s.val}</div>
+                        <div style={{ fontSize:11, color:"#666" }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recent Orders */}
                 <div className="glass-card">
                   <div className="card-title">
                     📦 Recent Orders
@@ -880,24 +1013,92 @@ export default function AdminDashboard() {
 
             {/* ── ORDERS ────────────────────────────────────────────── */}
             {activeTab === "orders" && (
-              <div className="glass-card">
-                <div className="card-title">📦 All Orders ({orders.length})</div>
-                {loadingOrders
-                  ? <p style={{ color:"#666", fontSize:"13px" }}>Loading orders…</p>
-                  : orders.length === 0
-                    ? <EmptyState icon="📦" text="No orders yet. Your orders will appear here." />
-                    : <div className="order-list">
-                        {orders.map(o => (
-                          <OrderItem
-                            key={o._id}
-                            order={o}
-                            expanded={expandedOrder === o._id}
-                            onToggle={() => setExpandedOrder(expandedOrder === o._id ? null : o._id)}
-                          />
-                        ))}
+              <>
+                {/* Search + Filter + Create */}
+                <div className="glass-card" style={{ padding:"16px 24px" }}>
+                  <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
+                    <input className="form-input" placeholder="Search orders…" value={orderSearch}
+                      onChange={e => setOrderSearch(e.target.value)}
+                      style={{ flex:1, minWidth:200, padding:"8px 14px", fontSize:13 }} />
+                    <select className="form-input" value={orderFilter}
+                      onChange={e => setOrderFilter(e.target.value)}
+                      style={{ padding:"8px 14px", fontSize:13, minWidth:130 }}>
+                      {["All","Pending","Processing","Shipped","Delivered","Cancelled"].map(s =>
+                        <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <button className="btn-save" style={{ padding:"8px 18px", fontSize:12 }}
+                      onClick={() => setShowCreateOrder(!showCreateOrder)}>
+                      {showCreateOrder ? "✕ Close" : "+ New Order"}
+                    </button>
+                  </div>
+
+                  {/* Create order form */}
+                  {showCreateOrder && (
+                    <div style={{ marginTop:14, padding:16, background:"rgba(74,144,217,.05)",
+                      border:"1px solid rgba(74,144,217,.15)", borderRadius:12 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#4A90D9", marginBottom:10 }}>Create New Order</div>
+                      <div className="edit-form-grid">
+                        <div className="form-field">
+                          <label className="form-label">Product Name</label>
+                          <input className="form-input" placeholder="TMT Fe500 Bar" value={newOrder.product}
+                            onChange={e => setNewOrder(p => ({...p, product:e.target.value}))} />
+                        </div>
+                        <div className="form-field">
+                          <label className="form-label">Quantity</label>
+                          <input className="form-input" placeholder="5 MT" value={newOrder.quantity}
+                            onChange={e => setNewOrder(p => ({...p, quantity:e.target.value}))} />
+                        </div>
+                        <div className="form-field">
+                          <label className="form-label">Amount</label>
+                          <input className="form-input" placeholder="₹2,50,000" value={newOrder.amount}
+                            onChange={e => setNewOrder(p => ({...p, amount:e.target.value}))} />
+                        </div>
+                        <div className="form-field">
+                          <label className="form-label">Customer UID (optional)</label>
+                          <input className="form-input" placeholder="Firebase UID" value={newOrder.firebaseUid}
+                            onChange={e => setNewOrder(p => ({...p, firebaseUid:e.target.value}))} />
+                        </div>
                       </div>
-                }
-              </div>
+                      <button className="btn-save" style={{ marginTop:10 }} onClick={handleCreateOrder}>Create Order</button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="glass-card">
+                  <div className="card-title">📦 Orders ({filteredOrders.length} of {orders.length})</div>
+                  {loadingOrders
+                    ? <p style={{ color:"#666", fontSize:"13px" }}>Loading orders…</p>
+                    : filteredOrders.length === 0
+                      ? <EmptyState icon="📦" text="No matching orders found." />
+                      : <div className="order-list">
+                          {filteredOrders.map(o => (
+                            <div key={o._id}>
+                              <OrderItem
+                                order={o}
+                                expanded={expandedOrder === o._id}
+                                onToggle={() => setExpandedOrder(expandedOrder === o._id ? null : o._id)}
+                              />
+                              {/* Admin actions bar */}
+                              <div style={{ display:"flex", gap:8, padding:"8px 20px 12px", alignItems:"center", flexWrap:"wrap" }}>
+                                <span style={{ fontSize:11, color:"#666", marginRight:4 }}>Status:</span>
+                                <select className="form-input" value={o.status}
+                                  onChange={e => handleStatusChange(o.orderId, e.target.value)}
+                                  style={{ padding:"5px 10px", fontSize:12, borderRadius:8, minWidth:120 }}>
+                                  {["Pending","Processing","Shipped","Delivered","Cancelled"].map(s =>
+                                    <option key={s} value={s}>{s}</option>)}
+                                </select>
+                                <button onClick={() => handleDeleteOrder(o._id, o.orderId)}
+                                  style={{ marginLeft:"auto", background:"rgba(248,113,113,.08)",
+                                    border:"1px solid rgba(248,113,113,.2)", color:"#F87171",
+                                    padding:"5px 14px", borderRadius:8, fontSize:11, fontWeight:600,
+                                    cursor:"pointer" }}>🗑 Delete</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                  }
+                </div>
+              </>
             )}
 
             {/* ── PROJECTS ──────────────────────────────────────────── */}
@@ -929,45 +1130,116 @@ export default function AdminDashboard() {
 
             {/* ── USERS ───────────────────────────────────────────── */}
             {activeTab === "users" && (
-              <div className="glass-card">
-                <div className="card-title">👥 All Registered Users</div>
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", marginTop: "1rem" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "1px solid #333", textAlign: "left", color: "#888" }}>
-                        <th style={{ padding: "12px 0" }}>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Joined</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.map(u => (
-                        <tr key={u._id} style={{ borderBottom: "1px solid #222" }}>
-                          <td style={{ padding: "12px 0", color: "#fff" }}>{u.name}</td>
-                          <td style={{ color: "#aaa" }}>{u.email}</td>
-                          <td>
-                            <span style={{ 
-                              padding: "4px 8px", 
-                              borderRadius: "12px", 
-                              fontSize: "12px",
-                              background: u.role === "admin" ? "#4A90D922" : "#333",
-                              color: u.role === "admin" ? "#4A90D9" : "#aaa"
-                            }}>
-                              {u.role}
-                            </span>
-                          </td>
-                          <td style={{ color: "#666" }}>
-                            {new Date(u.createdAt).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                      {users.length === 0 && (
-                        <tr><td colSpan={4} style={{ padding: "20px 0", textAlign: "center", color: "#666" }}>No users found.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
+              <>
+                <div className="glass-card" style={{ padding:"16px 24px" }}>
+                  <input className="form-input" placeholder="Search by name or email…" value={userSearch}
+                    onChange={e => setUserSearch(e.target.value)}
+                    style={{ width:"100%", padding:"8px 14px", fontSize:13 }} />
                 </div>
+                <div className="glass-card">
+                  <div className="card-title">👥 Users ({filteredUsers.length})</div>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid #333", textAlign: "left", color: "#888" }}>
+                          <th style={{ padding: "12px 8px" }}>Name</th>
+                          <th>Email</th>
+                          <th>Company</th>
+                          <th>Role</th>
+                          <th>Joined</th>
+                          <th style={{ textAlign:"center" }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredUsers.map(u => (
+                          <tr key={u._id} style={{ borderBottom: "1px solid #222" }}>
+                            <td style={{ padding: "12px 8px", color: "#fff", fontWeight:500 }}>{u.name}</td>
+                            <td style={{ color: "#aaa", fontSize:12 }}>{u.email}</td>
+                            <td style={{ color: "#666", fontSize:12 }}>{u.company || "—"}</td>
+                            <td>
+                              <button onClick={() => handleRoleToggle(u)} style={{
+                                padding: "4px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700,
+                                background: u.role === "admin" ? "rgba(74,144,217,.15)" : "rgba(255,255,255,.06)",
+                                color: u.role === "admin" ? "#4A90D9" : "#888",
+                                border: `1px solid ${u.role === "admin" ? "rgba(74,144,217,.3)" : "rgba(255,255,255,.1)"}`,
+                                cursor: "pointer",
+                              }}>
+                                {u.role === "admin" ? "🛡 Admin" : "👤 User"}
+                              </button>
+                            </td>
+                            <td style={{ color: "#666", fontSize:12 }}>
+                              {new Date(u.createdAt).toLocaleDateString("en-IN")}
+                            </td>
+                            <td style={{ textAlign:"center" }}>
+                              <button onClick={() => handleDeleteUser(u)} style={{
+                                background:"rgba(248,113,113,.08)", border:"1px solid rgba(248,113,113,.2)",
+                                color:"#F87171", padding:"4px 10px", borderRadius:8, fontSize:11,
+                                cursor:"pointer", fontWeight:600 }}>🗑</button>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredUsers.length === 0 && (
+                          <tr><td colSpan={6} style={{ padding: "20px 0", textAlign: "center", color: "#666" }}>No users found.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── PRODUCTS ─────────────────────────────────────────── */}
+            {activeTab === "products" && (
+              <div className="glass-card">
+                <div className="card-title">🏷 Product Catalog ({products.length})</div>
+                {products.length === 0
+                  ? <EmptyState icon="🏷" text="No products in database." />
+                  : <div style={{ overflowX:"auto" }}>
+                      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                        <thead>
+                          <tr style={{ borderBottom:"1px solid #333", textAlign:"left", color:"#888" }}>
+                            <th style={{ padding:"10px 8px" }}>Product</th>
+                            <th>Category</th>
+                            <th>Grade</th>
+                            <th style={{ textAlign:"right" }}>Price (₹)</th>
+                            <th style={{ textAlign:"center" }}>Stock</th>
+                            <th style={{ textAlign:"center" }}>Rating</th>
+                            <th style={{ textAlign:"center" }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {products.map(p => (
+                            <tr key={p._id} style={{ borderBottom:"1px solid #1a1a2e" }}>
+                              <td style={{ padding:"10px 8px", color:"#e8e8e8", fontWeight:500, maxWidth:200,
+                                whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                                {p.productName}
+                              </td>
+                              <td><span style={{ padding:"3px 8px", borderRadius:999, fontSize:10, fontWeight:600,
+                                background:"rgba(74,144,217,.1)", color:"#60A5FA", border:"1px solid rgba(74,144,217,.2)" }}>
+                                {p.category}</span></td>
+                              <td style={{ color:"#888", fontSize:12 }}>{p.steelGrade || "—"}</td>
+                              <td style={{ textAlign:"right", fontFamily:"'Rajdhani',sans-serif", fontWeight:700, color:"#4ADE80" }}>
+                                {p.finalPriceINR ? `₹${p.finalPriceINR.toLocaleString()}` : "—"}
+                              </td>
+                              <td style={{ textAlign:"center" }}>
+                                <span style={{ color: (p.stockQuantity ?? 0) > 10 ? "#4ADE80" : (p.stockQuantity ?? 0) > 0 ? "#FBbF24" : "#F87171",
+                                  fontWeight:700, fontSize:13 }}>{p.stockQuantity ?? 0}</span>
+                              </td>
+                              <td style={{ textAlign:"center", color:"#FBbF24", fontSize:12 }}>
+                                {p.rating ? `⭐ ${p.rating}` : "—"}
+                              </td>
+                              <td style={{ textAlign:"center" }}>
+                                <button onClick={() => handleDeleteProduct(p)} style={{
+                                  background:"rgba(248,113,113,.08)", border:"1px solid rgba(248,113,113,.2)",
+                                  color:"#F87171", padding:"4px 10px", borderRadius:8, fontSize:11,
+                                  cursor:"pointer", fontWeight:600 }}>🗑</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                }
               </div>
             )}
 

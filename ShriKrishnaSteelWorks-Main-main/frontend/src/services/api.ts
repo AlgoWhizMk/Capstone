@@ -96,3 +96,71 @@ export const getUserOrders = (firebaseUid: string) =>
 
 // Get all orders (Admin only)
 export const getAllOrders = () => request<MongoOrder[]>("/orders");
+
+// Create a new order (Admin)
+export const createOrder = (data: {
+  firebaseUid: string;
+  product: string;
+  quantity: string;
+  amount: string;
+  status?: string;
+}) => request<MongoOrder>("/orders", { method: "POST", body: JSON.stringify(data) });
+
+// Update order status
+export const updateOrderStatus = (orderId: string, status: string) =>
+  request<MongoOrder>(`/orders/${orderId}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+
+// Delete an order by MongoDB _id
+export const deleteOrder = (id: string) =>
+  request<{ message: string }>(`/orders/${id}`, { method: "DELETE" });
+
+// ── User Admin API ────────────────────────────────────────────────────────────
+
+// Update user role (admin only)
+export const updateUserRole = (firebaseUid: string, role: "user" | "admin") =>
+  request<MongoUser>(`/users/${firebaseUid}`, {
+    method: "PUT",
+    body: JSON.stringify({ role }),
+  });
+
+// Delete a user (admin only)
+export const deleteUser = (firebaseUid: string) =>
+  request<{ message: string }>(`/users/${firebaseUid}`, { method: "DELETE" });
+
+// ── Products Admin API ────────────────────────────────────────────────────────
+
+export interface MongoProduct {
+  _id: string;
+  productId: string;
+  productName: string;
+  category: string;
+  basePriceINR?: number;
+  finalPriceINR?: number;
+  stockQuantity?: number;
+  availability?: string;
+  imageUrl?: string;
+  steelGrade?: string;
+  rating?: number;
+  reviewsCount?: number;
+  salesCount?: number;
+  [key: string]: unknown;
+}
+
+// Get all products (paginated)
+export const getProducts = (page = 1, limit = 50) =>
+  request<{ products: MongoProduct[]; total: number }>(`/products?page=${page}&limit=${limit}`);
+
+// Create a product
+export const createProduct = (data: Partial<MongoProduct>) =>
+  request<MongoProduct>("/products", { method: "POST", body: JSON.stringify(data) });
+
+// Update a product
+export const updateProduct = (id: string, data: Partial<MongoProduct>) =>
+  request<MongoProduct>(`/products/${id}`, { method: "PUT", body: JSON.stringify(data) });
+
+// Delete a product
+export const deleteProduct = (id: string) =>
+  request<{ message: string }>(`/products/${id}`, { method: "DELETE" });
