@@ -1,0 +1,11 @@
+{
+  "installCommand": "cd ShriKrishnaSteelWorks-Main-main/frontend && npm install",
+  "buildCommand": "cd ShriKrishnaSteelWorks-Main-main/frontend && npm run build",
+  "outputDirectory": "ShriKrishnaSteelWorks-Main-main/frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
