@@ -38,7 +38,12 @@ export interface MongoOrder {
   isCustomized?: boolean;
   customDetails?: Record<string, string>;
   notes?: string;
-  deliveryAddress?: string;
+  deliveryAddress?: {
+    street: string;
+    city: string;
+    state: string;
+    pincode: string;
+  };
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────

@@ -51,7 +51,7 @@ const QS: Record<string, { color:string; bg:string; border:string }> = {
 // ── Mock Orders (demo data — shown alongside real DB orders) ─────────────────
 const MOCK_ORDERS: MongoOrder[] = [
   {
-    _id:"mock-001", orderId:"SKW-2025-001", status:"Delivered",
+    _id:"mock-001", orderId:"SKW-2025-001", firebaseUid:"mock-uid", status:"Delivered",
     product:"TMT Steel Bar Fe-500 (12mm) — 3 MT",
     amount:"₹1,26,000", quantity:"3 MT",
     notes:"Delivered to MIDC warehouse, all bars inspected",
@@ -60,7 +60,7 @@ const MOCK_ORDERS: MongoOrder[] = [
     createdAt:"2025-01-20T10:30:00Z",
   },
   {
-    _id:"mock-002", orderId:"SKW-2025-002", status:"Shipped",
+    _id:"mock-002", orderId:"SKW-2025-002", firebaseUid:"mock-uid", status:"Shipped",
     product:"MS Square Hollow Section Pipe (40×40mm, 3mm)",
     amount:"₹38,500", quantity:"50 pcs",
     notes:"Dispatched via company vehicle, ETA 2 days",
@@ -69,7 +69,7 @@ const MOCK_ORDERS: MongoOrder[] = [
     createdAt:"2025-02-14T09:15:00Z",
   },
   {
-    _id:"mock-003", orderId:"SKW-2025-003", status:"Processing",
+    _id:"mock-003", orderId:"SKW-2025-003", firebaseUid:"mock-uid", status:"Processing",
     product:"Custom SS 304 Staircase Railing — 18 RMT",
     amount:"₹54,000", quantity:"18 RMT",
     notes:"Design approved. Fabrication in progress at workshop.",
@@ -78,7 +78,7 @@ const MOCK_ORDERS: MongoOrder[] = [
     createdAt:"2025-03-05T11:00:00Z",
   },
   {
-    _id:"mock-004", orderId:"SKW-2025-004", status:"Pending",
+    _id:"mock-004", orderId:"SKW-2025-004", firebaseUid:"mock-uid", status:"Pending",
     product:"MS Angle Iron 50×50×6mm — 2 MT",
     amount:"₹82,000", quantity:"2 MT",
     notes:"Awaiting payment confirmation",
@@ -87,7 +87,7 @@ const MOCK_ORDERS: MongoOrder[] = [
     createdAt:"2025-04-01T08:00:00Z",
   },
   {
-    _id:"mock-005", orderId:"SKW-2024-089", status:"Delivered",
+    _id:"mock-005", orderId:"SKW-2024-089", firebaseUid:"mock-uid", status:"Delivered",
     product:"Pre-fab Industrial Shed Purlin Set (C-150)",
     amount:"₹2,35,000", quantity:"1 set",
     notes:"Complete purlin set with bolts. Site installation included.",
