@@ -50,6 +50,10 @@ app.use("/api/products", productRoutes);
 app.use("/api/chat",     chatbotRoute);   // 🔱 KrishnaBot LLM chatbot
 app.use("/api/inquiries", inquiryRoutes);
 
+app.get("/", (req, res) => {
+  res.send("Welcome to ShriKrishna SteelWorks API. Backend is live! 🚀");
+});
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", message: "ShriKrishna SteelWorks API is running ✅" });
 });
