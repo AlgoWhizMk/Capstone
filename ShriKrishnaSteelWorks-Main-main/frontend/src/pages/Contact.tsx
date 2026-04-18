@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { createInquiry } from "../services/api";
 import "../contact-styles.css";
 
 // ─── InView Hook ──────────────────────────────────────────────────────────────
@@ -100,6 +102,7 @@ function InfoCard({ icon, label, value, sub, href, delay }: {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Contact() {
+  const { user } = useAuth();
   const [form, setForm] = useState({
     name: "", company: "", phone: "", email: "",
     enquiryType: "", projectType: "", steelGrade: "",
@@ -130,11 +133,25 @@ export default function Contact() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name || !form.email || !form.phone) {
+      alert("Please provide your Name, Email, and Phone Number.");
+      return;
+    }
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1800));
-    setSubmitting(false);
-    setEnquiryRef(String(Date.now()).slice(-6));
-    setSubmitted(true);
+    try {
+      const dbInquiry = await createInquiry({
+        ...form,
+        firebaseUid: user?.uid || undefined,
+        type: "project" // label this as a general project contact
+      });
+      setEnquiryRef(dbInquiry._id.slice(-6).toUpperCase());
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Failed to submit inquiry:", error);
+      alert("Failed to submit inquiry. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formFilled = [form.name, form.email, form.phone, form.enquiryType, form.message].filter(Boolean).length;

@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { logOut } from "../services/firebase";
-import { getUser, getUserOrders, updateUser } from "../services/api";
-import type { MongoUser, MongoOrder } from "../services/api";
+import { getUser, getUserOrders, updateUser, getUserInquiries } from "../services/api";
+import type { MongoUser, MongoOrder, MongoInquiry } from "../services/api";
 
 type Tab = "overview" | "orders" | "quotations" | "profile" | "settings";
 type EditForm = {
@@ -43,6 +43,8 @@ const QS: Record<string, { color:string; bg:string; border:string }> = {
   Approved: { color:"#22C55E", bg:"#052814", border:"#16502e" },
   Pending:  { color:"#F59E0B", bg:"#1a1105", border:"#5a3d08" },
   Review:   { color:"#60A5FA", bg:"#061728", border:"#1a4166" },
+  Reviewed: { color:"#60A5FA", bg:"#061728", border:"#1a4166" },
+  Responded:{ color:"#A78BFA", bg:"#130c26", border:"#3b2d6e" },
   Rejected: { color:"#F87171", bg:"#1a0808", border:"#5a2020" },
 };
 
@@ -580,6 +582,7 @@ export default function UserDashboard() {
   const [tab,   setTab]   = useState<Tab>("overview");
   const [mu,    setMU]    = useState<MongoUser|null>(null);
   const [ords,  setOrds]  = useState<MongoOrder[]>([]);
+  const [inquiries, setInquiries] = useState<MongoInquiry[]>([]);
   const [load,  setLoad]  = useState(true);
   const [exp,   setExp]   = useState<string|null>(null);
   const [toast, setToast] = useState("");
@@ -610,6 +613,7 @@ export default function UserDashboard() {
       });
     }).finally(()=>setLoad(false));
     getUserOrders(user.uid).then(setOrds).catch(()=>{});
+    getUserInquiries(user.uid).then(setInquiries).catch(()=>{});
   },[user?.uid]);
 
   const toast$ = (m:string)=>{setToast(m);setTimeout(()=>setToast(""),3000);};
@@ -644,7 +648,7 @@ export default function UserDashboard() {
   const TABS = [
     {id:"overview"   as Tab, label:"Overview",     icon:"▣"},
     {id:"orders"     as Tab, label:"Orders",       icon:"⊞", badge:allOrds.length},
-    {id:"quotations" as Tab, label:"Quotations",   icon:"☰", badge:MOCK_QUOTES.length},
+    {id:"quotations" as Tab, label:"Quotations",   icon:"☰", badge:inquiries.length},
     {id:"profile"    as Tab, label:"Profile",      icon:"◯"},
     {id:"settings"   as Tab, label:"Settings",     icon:"◎"},
   ];
@@ -827,29 +831,42 @@ export default function UserDashboard() {
                   <Link to="/contact" className="ud-banner-btn">New Request</Link>
                 </div>
                 <div className="ud-card">
-                  <div className="ud-card-title">All Quotations ({MOCK_QUOTES.length})</div>
-                  <div className="ud-quotes">
-                    {MOCK_QUOTES.map(q=>{
-                      const qs=QS[q.status]??QS.Pending;
-                      return (
-                        <div key={q.id} className="ud-quote-row">
-                          <div className="ud-quote-ico">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5">
-                              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
+                  <div className="ud-card-title">All Quotations ({inquiries.length})</div>
+                  {inquiries.length === 0 ? (
+                    <div className="ud-empty">
+                      <div className="ud-empty-title">No quotations yet</div>
+                      <div className="ud-empty-sub">Submit an inquiry to receive custom quotes.</div>
+                      <Link to="/contact" className="ud-empty-link">Request Quote</Link>
+                    </div>
+                  ) : (
+                    <div className="ud-quotes">
+                      {inquiries.map(q=>{
+                        const qs=QS[q.status]??QS.Pending;
+                        const title = q.type === "customization" 
+                          ? `Customization: ${q.productDetails?.productName || "Product"}`
+                          : (q.projectType ? `Project: ${q.projectType}` : "Inquiry");
+                        return (
+                          <div key={q._id} className="ud-quote-row">
+                            <div className="ud-quote-ico">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5">
+                                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                              </svg>
+                            </div>
+                            <div className="ud-quote-info">
+                              <div className="ud-quote-name">{title}</div>
+                              <div className="ud-quote-meta">
+                                SKW-{q._id.slice(-6).toUpperCase()} · {q.quantity || "—"} · {new Date(q.createdAt).toLocaleDateString("en-IN")}
+                              </div>
+                            </div>
+                            <div className="ud-quote-right">
+                              <div className="ud-quote-amt">{q.adminResponse ? "Responded" : "Awaiting Quote"}</div>
+                              <span className="ud-status-pill" style={{color:qs.color,background:qs.bg,borderColor:qs.border}}>{q.status}</span>
+                            </div>
                           </div>
-                          <div className="ud-quote-info">
-                            <div className="ud-quote-name">{q.product}</div>
-                            <div className="ud-quote-meta">{q.id} · {q.qty} · {q.date}</div>
-                          </div>
-                          <div className="ud-quote-right">
-                            <div className="ud-quote-amt">{q.amount}</div>
-                            <span className="ud-status-pill" style={{color:qs.color,background:qs.bg,borderColor:qs.border}}>{q.status}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </>
             )}

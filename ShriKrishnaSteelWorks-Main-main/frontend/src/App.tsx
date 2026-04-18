@@ -45,6 +45,7 @@ function App() {
           <Route path="/about"    element={<About />} />
           <Route path="/products" element={<Products />} />
           <Route path="/contact"  element={<Contact />} />
+          <Route path="/projects" element={<Projects />} />
           <Route path="/cart"     element={<Cart />} />
           <Route path="/login"    element={<Auth />} />
           <Route path="/signup"   element={<Auth />} />
@@ -57,11 +58,6 @@ function App() {
           } />
 
           {/* Admin-only routes */}
-          <Route path="/projects" element={
-            <ProtectedRoute requireAdmin>
-              <Projects />
-            </ProtectedRoute>
-          } />
           <Route path="/admin/dashboard" element={
             <ProtectedRoute requireAdmin>
               <AdminDashboard />

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 // ─── InView Hook ─────────────────────────────────────────────────────────────
 function useInView(threshold = 0.08) {
@@ -204,7 +205,7 @@ const ONGOING = PROJECTS.filter(p => p.status === "Ongoing" || p.status === "Pla
 const COMPLETED = PROJECTS.filter(p => p.status === "Completed");
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-function ProjectModal({ project, onClose }: { project: Project; onClose: () => void }) {
+function ProjectModal({ project, onClose, showBudget }: { project: Project; onClose: () => void; showBudget: boolean }) {
   const [imgIdx, setImgIdx] = useState(0);
   const [fading, setFading] = useState(false);
 
@@ -263,7 +264,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
               <h2 className="prj-modal-title">{project.name}</h2>
               <div className="prj-modal-loc">📍 {project.location} — {project.district} District</div>
             </div>
-            <div className="prj-modal-budget">{project.budget}</div>
+            {showBudget && <div className="prj-modal-budget">{project.budget}</div>}
           </div>
 
           <p className="prj-modal-desc">{project.description}</p>
@@ -334,8 +335,8 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
 }
 
 // ─── Ongoing Card — larger, more dramatic ────────────────────────────────────
-function OngoingCard({ project, index, inView, onOpen }: {
-  project: Project; index: number; inView: boolean; onOpen: (p: Project) => void;
+function OngoingCard({ project, index, inView, onOpen, showBudget }: {
+  project: Project; index: number; inView: boolean; onOpen: (p: Project) => void; showBudget: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
   const isPlanning = project.status === "Planning";
@@ -370,7 +371,7 @@ function OngoingCard({ project, index, inView, onOpen }: {
             <h3 className="ong-title">{project.name}</h3>
             <div className="ong-location">📍 {project.location}</div>
           </div>
-          <div className="ong-budget">{project.budget}</div>
+          {showBudget && <div className="ong-budget">{project.budget}</div>}
         </div>
 
         <p className="ong-desc">{project.description}</p>
@@ -430,8 +431,8 @@ function OngoingCard({ project, index, inView, onOpen }: {
 }
 
 // ─── Completed Card ───────────────────────────────────────────────────────────
-function CompletedCard({ project, index, inView, onOpen }: {
-  project: Project; index: number; inView: boolean; onOpen: (p: Project) => void;
+function CompletedCard({ project, index, inView, onOpen, showBudget }: {
+  project: Project; index: number; inView: boolean; onOpen: (p: Project) => void; showBudget: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -474,7 +475,7 @@ function CompletedCard({ project, index, inView, onOpen }: {
             <h3 className="cmp-title">{project.name}</h3>
             <div className="cmp-location">📍 {project.location}</div>
           </div>
-          <div className="cmp-budget-pill">{project.budget}</div>
+          {showBudget && <div className="cmp-budget-pill">{project.budget}</div>}
         </div>
         <div className="cmp-timeline-row">
           <div className="cmp-tl-item">
@@ -633,7 +634,7 @@ declare global {
 }
 
 // ─── Maharashtra Map Component ────────────────────────────────────────────────
-function MaharashtraMap({ inView }: { inView: boolean }) {
+function MaharashtraMap({ inView, showBudget }: { inView: boolean; showBudget: boolean }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<LeafletMapInstance | null>(null);
   const [selectedMapProject, setSelectedMapProject] = useState<typeof MAP_PROJECTS[0] | null>(null);
@@ -743,10 +744,10 @@ function MaharashtraMap({ inView }: { inView: boolean }) {
                 <span style="color:rgba(245,247,250,0.5);">Type</span>
                 <span style="color:#F5F7FA;font-weight:700;">${project.type}</span>
               </div>
-              <div style="display:flex;justify-content:space-between;padding:0.28rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.76rem;">
+              ${showBudget ? `<div style="display:flex;justify-content:space-between;padding:0.28rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.76rem;">
                 <span style="color:rgba(245,247,250,0.5);">Budget</span>
                 <span style="color:#F5F7FA;font-weight:700;">${project.budget}</span>
-              </div>
+              </div>` : ""}
               <div style="display:flex;justify-content:space-between;padding:0.28rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.76rem;">
                 <span style="color:rgba(245,247,250,0.5);">Steel Used</span>
                 <span style="color:#F5F7FA;font-weight:700;">${project.steelUsed}</span>
@@ -938,7 +939,7 @@ function MaharashtraMap({ inView }: { inView: boolean }) {
               </div>
               <div className="mhmap-modal-stats">
                 {[
-                  { label: "Budget", value: selectedMapProject.budget },
+                  ...(showBudget ? [{ label: "Budget", value: selectedMapProject.budget }] : []),
                   { label: "Steel Used", value: selectedMapProject.steelUsed },
                   { label: "Workers", value: selectedMapProject.workers > 0 ? `${selectedMapProject.workers}` : "TBD" },
                   { label: "Client", value: selectedMapProject.client },
@@ -1099,7 +1100,7 @@ function FilterBar({ filter, onChange }: { filter: FilterState; onChange: (f: Fi
 }
 
 // ─── Timeline View ────────────────────────────────────────────────────────────
-function TimelineView({ projects, onOpen }: { projects: Project[]; onOpen: (p: Project) => void }) {
+function TimelineView({ projects, onOpen, showBudget }: { projects: Project[]; onOpen: (p: Project) => void; showBudget: boolean }) {
   const STATUS_C: Record<string,string> = { Ongoing:"#3B82F6", Planning:"#F59E0B", Completed:"#22C55E" };
   // Sorted by start date
   const sorted = [...projects].sort((a, b) => a.startDate.localeCompare(b.startDate));
@@ -1155,7 +1156,7 @@ function TimelineView({ projects, onOpen }: { projects: Project[]; onOpen: (p: P
 
               {/* Right: stats */}
               <div style={{ textAlign:"right" }}>
-                <div style={{ fontSize:16, fontWeight:700, color:"#F1F5F9", marginBottom:2 }}>{p.budget}</div>
+                {showBudget && <div style={{ fontSize:16, fontWeight:700, color:"#F1F5F9", marginBottom:2 }}>{p.budget}</div>}
                 <div style={{ fontSize:11, color:"#475569" }}>{p.steelUsed} steel</div>
                 <div style={{ fontSize:11, color:"#475569" }}>{p.workers > 0 ? `${p.workers} workers` : "Planning"}</div>
                 <div style={{ marginTop:8 }}>
@@ -1214,6 +1215,8 @@ function CategoryPanel() {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Projects() {
+  const { isAdmin } = useAuth();
+  const showBudget = !!isAdmin;
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [filter, setFilter] = useState<FilterState>({ search: "", status: "All", category: "All", view: "cards" });
   const heroBgRef = useRef<HTMLDivElement>(null);
@@ -1299,13 +1302,13 @@ export default function Projects() {
       {/* ══ MARQUEE ═══════════════════════════════════════════════════════ */}
       <Marquee />
 
-      {/* KPI STATS BAR */}
-      <div ref={kpiRef}>
-        <KpiBar inView={kpiInView} />
-      </div>
-
       {/* FILTER + SEARCH BAR */}
       <FilterBar filter={filter} onChange={setFilter} />
+
+      {/* ══ MAHARASHTRA MAP — below search bar */}
+      <div ref={mapSRef}>
+        <MaharashtraMap inView={mapSInView} showBudget={showBudget} />
+      </div>
 
       {/* TIMELINE VIEW */}
       {filter.view === "timeline" && (
@@ -1314,7 +1317,7 @@ export default function Projects() {
             <div style={{ fontFamily:"Inter,sans-serif", fontSize:22, fontWeight:700, color:"#F1F5F9", marginBottom:4 }}>All Projects — Timeline</div>
             <p style={{ fontSize:13, color:"#475569" }}>Click any row to view full project details. Showing {filteredProjects.length} projects.</p>
           </div>
-          <TimelineView projects={filteredProjects} onOpen={setSelectedProject} />
+          <TimelineView projects={filteredProjects} onOpen={setSelectedProject} showBudget={showBudget} />
           <div style={{ maxWidth:1340, margin:"0 auto", padding:"0 24px 48px" }}>
             <CategoryPanel />
           </div>
@@ -1372,7 +1375,7 @@ export default function Projects() {
           </div>
           <div className="ong-cards-list">
             {filteredOngoing.map((project, i) => (
-              <OngoingCard key={project.id} project={project} index={i} inView={ongInView} onOpen={setSelectedProject} />
+              <OngoingCard key={project.id} project={project} index={i} inView={ongInView} onOpen={setSelectedProject} showBudget={showBudget} />
             ))}
           </div>
         </div>
@@ -1421,19 +1424,13 @@ export default function Projects() {
           </div>
           <div className="cmp-cards-grid">
             {filteredCompleted.map((project, i) => (
-              <CompletedCard key={project.id} project={project} index={i} inView={cmpInView} onOpen={setSelectedProject} />
+              <CompletedCard key={project.id} project={project} index={i} inView={cmpInView} onOpen={setSelectedProject} showBudget={showBudget} />
             ))}
           </div>
         </div>
       </section>
       )}
 
-      {/* ══ MAHARASHTRA MAP — after cards section */}
-      {filter.view === "cards" && (
-        <div ref={mapSRef}>
-          <MaharashtraMap inView={mapSInView} />
-        </div>
-      )}
 
       {/* ══ PROCESS STRIP ═════════════════════════════════════════════════ */}
       <section className="prj-process-strip" ref={processRef}>
@@ -1475,7 +1472,7 @@ export default function Projects() {
       </section>
 
       {selectedProject && (
-        <ProjectModal project={selectedProject} onClose={() => setSelectedProject(null)} />
+        <ProjectModal project={selectedProject} onClose={() => setSelectedProject(null)} showBudget={showBudget} />
       )}
     </div>
   );

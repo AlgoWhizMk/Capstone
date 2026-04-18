@@ -677,17 +677,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══ STATS with Animated Boxes ══ */}
-      <section className="skw-stats-section" ref={statsRef}>
-        <div className="skw-stats-grid">
-          {STATS.map((s, i) => (
-            <div key={i} style={{ animationDelay: `${i * 0.15}s` }} className={`skw-stat-wrap ${statsInView ? "skw-stat-visible" : ""}`}>
-              <AnimatedStat stat={s} inView={statsInView} />
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ══ ABOUT with Slider + Cert Logos ══ */}
       <section className="skw-about-strip">
         <div className="skw-about-inner">

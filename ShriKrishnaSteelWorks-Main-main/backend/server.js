@@ -9,6 +9,7 @@ import userRoutes from "./routes/users.js";
 import orderRoutes from "./routes/orders.js";
 import productRoutes from "./routes/products.js";
 import chatbotRoute from "./routes/chatbot.js";
+import inquiryRoutes from "./routes/inquiries.js";
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -47,6 +48,7 @@ app.use("/api/users",    userRoutes);
 app.use("/api/orders",   orderRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/chat",     chatbotRoute);   // 🔱 KrishnaBot LLM chatbot
+app.use("/api/inquiries", inquiryRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", message: "ShriKrishna SteelWorks API is running ✅" });

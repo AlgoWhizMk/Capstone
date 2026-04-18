@@ -1,0 +1,130 @@
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\hooks\useProducts.ts
+  40:21  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\hooks\useProducts.ts:40:21
+  38 |
+  39 |   // Reset to page 1 whenever search or category changes
+> 40 |   useEffect(() => { setPage(1); }, [search, category]);
+     |                     ^^^^^^^ Avoid calling setState() directly within an effect
+  41 |
+  42 |   useEffect(() => {
+  43 |     let cancelled = false;  react-hooks/set-state-in-effect
+  44:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\hooks\useProducts.ts:44:5
+  42 |   useEffect(() => {
+  43 |     let cancelled = false;
+> 44 |     setLoading(true);
+     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  45 |
+  46 |     const params = new URLSearchParams({
+  47 |       search,                                                    react-hooks/set-state-in-effect
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\components\layout\ChatWidget.tsx
+  70:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  70:73  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\context\AuthContext.tsx
+   68:73  error  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  104:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\pages\AdminDashboard.tsx
+  188:57   error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  195:9    error  'inlineUpdateInquiry' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  195:57   error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  235:13   error  'err' is defined but never used                           @typescript-eslint/no-unused-vars
+  326:47   error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  326:77   error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  450:110  error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  513:37   error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  513:71   error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  514:66   error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  633:161  error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  723:51   error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\pages\Auth.tsx
+  262:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  285:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\pages\Contact.tsx
+  304:37  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\pages\Contact.tsx:304:37
+  302 |                 </p>
+  303 |                 <div className="ctc-success-ref">
+> 304 |                   Ref: <strong>SKW-{Date.now().toString().slice(-6)}</strong>
+      |                                     ^^^^^^^^^^ Cannot call impure function
+  305 |                 </div>
+  306 |                 <button className="ctc-success-reset" onClick={() => { setSubmitted(false); setForm({ name:"",company:"",phone:"",email:"",enquiryType:"",projectType:"",steelGrade:"",quantity:"",message:"",timeline:"",custDimensions:"",custFinish:"",custMaterial:"",custNotes:"" }); }}>
+  307 |                   Submit Another Enquiry  react-hooks/purity
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\pages\Products.tsx
+  695:29  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\pages\Products.tsx:695:29
+  693 |           ) : (
+  694 |             <div className={`xgrid ${viewMode === "list" ? "xlist" : ""}`}>
+> 695 |               {filtered.map((product, i) => {
+      |                             ^^^^^^^^^^^^^^^^^
+> 696 |                 const avClass = product.stock === "In Stock" ? "av-in" : product.stock === "Low Stock" ? "av-low" : "av-mto";
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 697 |                 const cartCount = cartItems.filter(id => id === product.id).length;
+      ΓÇª
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 780 |                 );
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 781 |               })}
+      | ^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  782 |             </div>
+  783 |           )}
+  784 |  react-hooks/refs
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\pages\Projects.tsx
+    1:1   error    Do not use "@ts-nocheck" because it alters compilation errors                                                @typescript-eslint/ban-ts-comment
+    4:10  error    'MapContainer' is defined but never used                                                                     @typescript-eslint/no-unused-vars
+    4:24  error    'TileLayer' is defined but never used                                                                        @typescript-eslint/no-unused-vars
+    4:35  error    'Marker' is defined but never used                                                                           @typescript-eslint/no-unused-vars
+    4:43  error    'Popup' is defined but never used                                                                            @typescript-eslint/no-unused-vars
+    8:7   error    'LeafIcon' is assigned a value but never used                                                                @typescript-eslint/no-unused-vars
+  559:33  error    Unexpected any. Specify a different type                                                                     @typescript-eslint/no-explicit-any
+  593:28  error    Unexpected any. Specify a different type                                                                     @typescript-eslint/no-explicit-any
+  702:22  error    Unexpected any. Specify a different type                                                                     @typescript-eslint/no-explicit-any
+  718:6   warning  React Hook useEffect has a missing dependency: 'projects'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  721:16  error    Unexpected any. Specify a different type                                                                     @typescript-eslint/no-explicit-any
+  725:38  error    Unexpected any. Specify a different type                                                                     @typescript-eslint/no-explicit-any
+  726:6   warning  React Hook useEffect has a missing dependency: 'projects'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\pages\UserDashboard.tsx
+  733:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  738:84  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  739:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  779:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  780:92  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\SNEHAL\OneDrive\Documents\CapstoneProject\frontend\src\services\firebase.ts
+   53:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 42 problems (40 errors, 2 warnings)
+

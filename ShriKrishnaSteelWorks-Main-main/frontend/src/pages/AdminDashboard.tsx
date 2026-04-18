@@ -15,15 +15,17 @@ import {
   deleteUser,
   getProducts,
   deleteProduct,
+  getAllInquiries,
+  updateInquiry,
 } from "../services/api";
 import type {
-  MongoUser, MongoOrder, MongoProduct,
+  MongoUser, MongoOrder, MongoProduct, MongoInquiry,
 } from "../services/api";
 import ProjectDetailModal from "../components/ProjectDetailModal";
 import type { ProjectDetailData } from "../components/ProjectDetailModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Tab = "overview" | "orders" | "projects" | "users" | "products" | "profile" | "settings";
+type Tab = "overview" | "orders" | "projects" | "users" | "products" | "inquiries" | "profile" | "settings";
 
 type EditProfileForm = {
   name: string;
@@ -614,6 +616,7 @@ export default function AdminDashboard() {
   const [orders,    setOrders]        = useState<MongoOrder[]>([]);
   const [users,     setUsers]         = useState<MongoUser[]>([]);
   const [products,  setProducts]      = useState<MongoProduct[]>([]);
+  const [inquiries, setInquiries]     = useState<MongoInquiry[]>([]);
   const [loadingUser,  setLoadingUser]    = useState(true);
   const [loadingOrders,setLoadingOrders]  = useState(true);
   const [error,        setError]          = useState("");
@@ -624,6 +627,8 @@ export default function AdminDashboard() {
   const [selectedProject, setSelectedProject] = useState<ProjectDetailData | null>(null);
   const [orderSearch, setOrderSearch]     = useState("");
   const [orderFilter, setOrderFilter]     = useState("All");
+  const [inquirySearch, setInquirySearch] = useState("");
+  const [inquiryFilter, setInquiryFilter] = useState("All");
   const [userSearch, setUserSearch]       = useState("");
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [newOrder, setNewOrder]           = useState({ firebaseUid:"", product:"", quantity:"", amount:"" });
@@ -668,21 +673,30 @@ export default function AdminDashboard() {
       .finally(() => setLoadingUser(false));
   }, [user?.uid]);
 
-  // Fetch all orders, users, and products
+  // Fetch all orders, users, products, and inquiries
   useEffect(() => {
     if (!user) return;
     setLoadingOrders(true);
-    Promise.all([getAllOrders(), getAllUsers(), getProducts(1, 200)])
-      .then(([ordersData, usersData, productsData]) => {
+    Promise.all([getAllOrders(), getAllUsers(), getProducts(1, 200), getAllInquiries()])
+      .then(([ordersData, usersData, productsData, inquiriesData]) => {
         setOrders(ordersData);
         setUsers(usersData);
         setProducts(productsData.products || []);
+        setInquiries(inquiriesData);
       })
       .catch(console.error)
       .finally(() => setLoadingOrders(false));
   }, [user]);
 
   // ── Admin CRUD handlers ──
+  const handleInquiryStatus = async (id: string, obj: { status: MongoInquiry["status"], adminResponse?: string }) => {
+    try {
+      const updated = await updateInquiry(id, obj);
+      setInquiries(prev => prev.map(q => q._id === id ? updated : q));
+      showToast(`✅ Inquiry marked as ${obj.status}`);
+    } catch { showToast("❌ Failed to update inquiry"); }
+  };
+
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
       const updated = await updateOrderStatus(orderId, newStatus);
@@ -756,6 +770,13 @@ export default function AdminDashboard() {
     return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
   });
 
+  const filteredInquiries = inquiries.filter(q => {
+    const qLabel = q.referenceName || q.message || q.productDetails?.productName || q.enquiryType || "Enquiry";
+    const matchSearch = !inquirySearch || qLabel.toLowerCase().includes(inquirySearch.toLowerCase()) || q._id.toLowerCase().includes(inquirySearch.toLowerCase());
+    const matchFilter = inquiryFilter === "All" || q.status === inquiryFilter;
+    return matchSearch && matchFilter;
+  });
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(""), 3000);
@@ -800,6 +821,7 @@ export default function AdminDashboard() {
   const tabs = [
     { id: "overview"  as Tab, label: "Overview",      icon: "⊞" },
     { id: "orders"    as Tab, label: "All Orders",    icon: "📦", badge: orders.length },
+    { id: "inquiries" as Tab, label: "Inquiries",     icon: "💬", badge: inquiries.length },
     { id: "users"     as Tab, label: "Manage Users",  icon: "👥", badge: users.length },
     { id: "products"  as Tab, label: "Products",      icon: "🏷", badge: products.length },
     { id: "projects"  as Tab, label: "All Projects",  icon: "🏗",  badge: MOCK_PROJECTS.length },
@@ -1330,6 +1352,81 @@ export default function AdminDashboard() {
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── INQUIRIES & QUOTATIONS ────────────────────────────── */}
+            {activeTab === "inquiries" && (
+              <div className="glass-card">
+                <div className="card-title">Customer Inquiries & Customization Requests</div>
+                
+                <div className="filter-bar" style={{ display:"flex", gap:"14px", marginBottom:"20px" }}>
+                  <input className="form-input" placeholder="Search inquiries..." value={inquirySearch} onChange={e => setInquirySearch(e.target.value)} style={{ flex:1 }} />
+                  <select className="form-input" value={inquiryFilter} onChange={e => setInquiryFilter(e.target.value)} style={{ width:"180px", cursor:"pointer" }}>
+                    {["All", "Pending", "Reviewed", "Approved", "Responded", "Rejected"].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div className="order-list">
+                  {filteredInquiries.length === 0 ? (
+                    <div style={{ textAlign:"center", padding:"40px", color:"#888", fontSize:"14px" }}>No inquiries found</div>
+                  ) : filteredInquiries.map(q => {
+                    const statusConfig = STATUS_COLORS[q.status] ?? STATUS_COLORS.Pending;
+                    const isExpanded = expandedOrder === q._id;
+                    const qLabel = q.referenceName || q.message || q.productDetails?.productName || q.enquiryType || "Enquiry";
+                    return (
+                      <div key={q._id} className="order-item">
+                        <div className="order-header" onClick={() => setExpandedOrder(isExpanded ? null : q._id)}>
+                          <div className="order-thumb" style={{ background:"rgba(74,144,217,.1)", color:"#4A90D9", fontSize:"22px" }}>
+                            {q.type === "customization" ? "📐" : "💬"}
+                          </div>
+                          <div className="order-info">
+                            <div className="order-product" style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                              {qLabel}
+                              {q.type === "customization" && <span className="customized-tag">Customization</span>}
+                              {q.type === "project" && <span className="customized-tag" style={{ background:"rgba(245,158,11,.15)", color:"#F59E0B", borderColor:"rgba(245,158,11,.2)" }}>Project Base</span>}
+                            </div>
+                            <div className="order-meta-row">
+                              <span className="order-id" style={{ color:"#bbb" }}>{q.name} ({q.phone})</span>
+                              <span className="order-id">SKW-{q._id.slice(-6).toUpperCase()}</span>
+                              <span className="order-date">{new Date(q.createdAt).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}</span>
+                            </div>
+                          </div>
+                          <span className="product-status-pill" style={{ position:"relative", top:0, right:0, background:statusConfig.bg, color:statusConfig.color, border:`1px solid ${statusConfig.color}44` }}>
+                            {q.status}
+                          </span>
+                          <svg className={`order-chevron ${isExpanded ? "open" : ""}`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        {isExpanded && (
+                          <div className="order-expanded">
+                            <div className="customized-details-box" style={{ background:"linear-gradient(145deg,rgba(74,144,217,.03),rgba(74,144,217,.01))", borderColor:"rgba(74,144,217,.15)" }}>
+                              <div className="custom-box-title" style={{ color:"#4A90D9" }}>Full Details</div>
+                              <div className="custom-row" style={{ gridTemplateColumns:"1fr 1fr 1fr" }}>
+                                <div className="custom-field"><div className="custom-field-label">Email</div><div className="custom-field-value">{q.email || "—"}</div></div>
+                                <div className="custom-field"><div className="custom-field-label">Company</div><div className="custom-field-value">{q.company || "—"}</div></div>
+                                <div className="custom-field"><div className="custom-field-label">Quantity</div><div className="custom-field-value">{q.quantity || "—"}</div></div>
+                                <div className="custom-field"><div className="custom-field-label">Custom Dim/Size</div><div className="custom-field-value">{q.customDimensions || "—"}</div></div>
+                                <div className="custom-field"><div className="custom-field-label">Timeline</div><div className="custom-field-value">{q.timeline || "—"}</div></div>
+                                <div className="custom-field"><div className="custom-field-label">Custom Notes</div><div className="custom-field-value">{q.customNotes || "—"}</div></div>
+                                <div className="custom-field" style={{ gridColumn:"1/-1" }}><div className="custom-field-label">Message</div><div className="custom-field-value" style={{ whiteSpace:"pre-wrap" }}>{q.message || "—"}</div></div>
+                              </div>
+                              <div style={{ marginTop:"16px", padding:"16px", background:"rgba(0,0,0,.2)", borderRadius:"10px" }}>
+                                <div className="custom-field-label">Admin Actions</div>
+                                <div style={{ display:"flex", gap:"10px", marginTop:"10px", flexWrap:"wrap" }}>
+                                  {(["Pending", "Reviewed", "Approved", "Responded", "Rejected"] as const).map(st => (
+                                    <button key={st} onClick={() => handleInquiryStatus(q._id, { status: st })} className={`setting-btn-sm`} style={{ background: q.status === st ? "#4A90D9" : "rgba(74,144,217,.1)", color: q.status === st ? "#fff" : "#4A90D9" }}>
+                                      {st}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

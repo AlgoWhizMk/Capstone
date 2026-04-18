@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useProducts, useCategories } from "../../hooks/useProducts";
-import { useAuth } from "../context/AuthContext";
-import { createInquiry } from "../services/api";
+import { useProducts, useCategories } from "../../../frontend/hooks/useProducts";
 import "../products-styles.css";
 
-// ─── Hooks ────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Hooks ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function useInView(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
@@ -31,17 +29,16 @@ function useMouseParallax() {
   return pos;
 }
 
-// ─── Category Config ──────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Category Config ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const CAT_CONFIG: Record<string, { icon: string; accent: string; glow: string }> = {
-  "All": { icon: "◈", accent: "#4A90D9", glow: "rgba(74,144,217,0.4)" },
-  "Steel Furniture Works": { icon: "🪑", accent: "#E8B84B", glow: "rgba(232,184,75,0.4)" },
-  "Home Steel Furnitures": { icon: "🏠", accent: "#E67E22", glow: "rgba(230,126,34,0.4)" },
-  "Commercial Building Structures": { icon: "🏗️", accent: "#4A90D9", glow: "rgba(74,144,217,0.4)" },
-  "SS Railing": { icon: "🔩", accent: "#2ECC71", glow: "rgba(46,204,113,0.4)" },
-  "Kitchen Trolleys": { icon: "🛒", accent: "#E74C3C", glow: "rgba(231,76,60,0.4)" },
-  "Hotel Furnitures": { icon: "🏨", accent: "#9B59B6", glow: "rgba(155,89,182,0.4)" },
-  "Food Processing Machines": { icon: "⚙️", accent: "#1ABC9C", glow: "rgba(26,188,156,0.4)" },
-  "Park Instruments": { icon: "🌿", accent: "#F39C12", glow: "rgba(243,156,18,0.4)" },
+  "All":                            { icon: "Γùê", accent: "#4A90D9", glow: "rgba(74,144,217,0.4)"  },
+  "Steel Furniture Works":          { icon: "≡ƒ¬æ", accent: "#E8B84B", glow: "rgba(232,184,75,0.4)" },
+  "Commercial Building Structures": { icon: "≡ƒÅù∩╕Å", accent: "#4A90D9", glow: "rgba(74,144,217,0.4)" },
+  "SS Railing":                     { icon: "≡ƒö⌐", accent: "#2ECC71", glow: "rgba(46,204,113,0.4)" },
+  "Kitchen Trolleys":               { icon: "≡ƒ¢Æ", accent: "#E74C3C", glow: "rgba(231,76,60,0.4)"  },
+  "Hotel Furnitures":               { icon: "≡ƒÅ¿", accent: "#9B59B6", glow: "rgba(155,89,182,0.4)" },
+  "Food Processing Machines":       { icon: "ΓÜÖ∩╕Å", accent: "#1ABC9C", glow: "rgba(26,188,156,0.4)" },
+  "Park Instruments":               { icon: "≡ƒî┐", accent: "#F39C12", glow: "rgba(243,156,18,0.4)" },
 };
 const getCfg = (cat: string) => CAT_CONFIG[cat] ?? CAT_CONFIG["All"];
 
@@ -53,16 +50,14 @@ type MappedProduct = {
   warranty: string; finish: string; specs: Record<string, string>;
   sizes: string[]; highlights: string[]; applications: string[];
   customizable: boolean;
-  imageUrl: string;
 };
 
 const CUSTOMIZE_FIELDS = [
-  { label: "Quantity Required", type: "number", name: "quantity", placeholder: "e.g. 5 units" },
-  { label: "Phone Number", type: "tel", name: "phone", placeholder: "e.g. 9876543210", required: true },
-  { label: "Custom Dimensions", type: "text", name: "size", placeholder: "e.g. 120×60×75 cm" },
-  { label: "Delivery Location", type: "text", name: "location", placeholder: "e.g. Pune, Maharashtra" },
-  { label: "Required By Date", type: "date", name: "date", placeholder: "" },
-  { label: "Special Instructions", type: "textarea", name: "notes", placeholder: "Finish, colour, load specs..." },
+  { label: "Quantity Required",    type: "number",   name: "quantity", placeholder: "e.g. 5 units" },
+  { label: "Custom Dimensions",    type: "text",     name: "size",     placeholder: "e.g. 120├ù60├ù75 cm" },
+  { label: "Delivery Location",    type: "text",     name: "location", placeholder: "e.g. Pune, Maharashtra" },
+  { label: "Required By Date",     type: "date",     name: "date",     placeholder: "" },
+  { label: "Special Instructions", type: "textarea", name: "notes",    placeholder: "Finish, colour, load specs..." },
 ];
 
 function StatCounter({ end, suffix, label }: { end: number; suffix: string; label: string }) {
@@ -87,52 +82,48 @@ function StatCounter({ end, suffix, label }: { end: number; suffix: string; labe
 
 function Stars({ rating }: { rating: number }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: "1px" }}>
-      {[1, 2, 3, 4, 5].map(i => (
-        <span key={i} style={{ fontSize: "0.78rem", color: i <= Math.round(rating) ? "#E8B84B" : "rgba(220,232,245,0.18)" }}>★</span>
+    <span style={{ display:"inline-flex", alignItems:"center", gap:"1px" }}>
+      {[1,2,3,4,5].map(i => (
+        <span key={i} style={{ fontSize:"0.78rem", color: i <= Math.round(rating) ? "#E8B84B" : "rgba(220,232,245,0.18)" }}>Γÿà</span>
       ))}
-      <span style={{ fontSize: "0.7rem", color: "rgba(220,232,245,0.45)", marginLeft: "0.28rem" }}>{rating.toFixed(1)}</span>
+      <span style={{ fontSize:"0.7rem", color:"rgba(220,232,245,0.45)", marginLeft:"0.28rem" }}>{rating.toFixed(1)}</span>
     </span>
   );
 }
 
 export default function Products() {
   const mouse = useMouseParallax();
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [detailProduct, setDetailProduct] = useState<MappedProduct | null>(null);
+  const [activeCategory, setActiveCategory]     = useState("All");
+  const [catDropdownOpen, setCatDropdownOpen]   = useState(false);
+  const [search, setSearch]                     = useState("");
+  const [debouncedSearch, setDebouncedSearch]   = useState("");
+  const [detailProduct, setDetailProduct]       = useState<MappedProduct | null>(null);
   const [customizeProduct, setCustomizeProduct] = useState<MappedProduct | null>(null);
-  const [showLogin, setShowLogin] = useState(false);
-  const [customizeForm, setCustomizeForm] = useState<Record<string, string>>({});
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [cartItems, setCartItems] = useState<string[]>([]);
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"specs" | "sizes" | "highlights" | "applications">("specs");
-  const [heroLoaded, setHeroLoaded] = useState(false);
-  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
-  const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-
-  const { user } = useAuth();
-  const [submitting, setSubmitting] = useState(false);
+  const [showLogin, setShowLogin]               = useState(false);
+  const [customizeForm, setCustomizeForm]       = useState<Record<string, string>>({});
+  const [uploadedFiles, setUploadedFiles]       = useState<File[]>([]);
+  const [cartItems, setCartItems]               = useState<string[]>([]);
+  const [cartNotif, setCartNotif]               = useState<{ name: string } | null>(null);
+  const [hoveredCard, setHoveredCard]           = useState<string | null>(null);
+  const [activeTab, setActiveTab]               = useState<"specs"|"sizes"|"highlights"|"applications">("specs");
+  const [heroLoaded, setHeroLoaded]             = useState(false);
+  const [cursorPos, setCursorPos]               = useState({ x: 0, y: 0 });
+  const [page, setPage]                         = useState(1);
+  const [viewMode, setViewMode]                 = useState<"grid"|"list">("grid");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const { ref: heroSectionRef } = useInView(0.05);
-  const { ref: gridSectionRef, inView: gridSectionInView } = useInView();
+  const dropdownRef  = useRef<HTMLDivElement>(null);
+  const heroRef      = useInView(0.05);
+  const gridRef      = useInView();
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 400);
     return () => clearTimeout(t);
   }, [search]);
 
-  useEffect(() => {
-    void Promise.resolve().then(() => setPage(1));
-  }, [debouncedSearch, activeCategory]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, activeCategory]);
 
-  const { products: apiProducts, total, loading } = useProducts(debouncedSearch, activeCategory, 12, page);
+  const { products: apiProducts, total, loading } = useProducts(debouncedSearch, activeCategory, 12);
   const dbCategories = useCategories();
 
   const CATEGORIES = [
@@ -144,8 +135,8 @@ export default function Products() {
     const cfg = getCfg(p.category);
     return {
       id: p.productId, name: p.productName, category: p.category,
-      grade: p.steelGrade || p.furnitureType || "—",
-      price: `₹${Number(p.finalPriceINR).toLocaleString("en-IN")}`,
+      grade: p.steelGrade || p.furnitureType || "ΓÇö",
+      price: `Γé╣${Number(p.finalPriceINR).toLocaleString("en-IN")}`,
       unit: "/piece", minOrder: "1 piece",
       lead: `${p.leadTimeDays} days`,
       stock: p.stockQuantity > 50 ? "In Stock" : p.stockQuantity > 0 ? "Low Stock" : "Made to Order",
@@ -154,22 +145,21 @@ export default function Products() {
       accentColor: cfg.accent, glowColor: cfg.glow,
       warranty: `${p.warrantyYears ?? 1} yr warranty`,
       finish: p.surfaceFinish || "Standard",
-      shortDesc: (p.productDescription || "").substring(0, 128) + "…",
+      shortDesc: (p.productDescription || "").substring(0, 128) + "ΓÇª",
       specs: {
-        "Steel Grade": p.steelGrade || "—",
-        "Frame Thickness": p.frameThickness || "—",
-        "Surface Finish": p.surfaceFinish || "—",
-        "Load Capacity": p.loadCapacityKg ? `${p.loadCapacityKg} kg` : "—",
-        "Dimensions": `${p.length_cm}×${p.width_cm}×${p.height_cm} cm`,
-        "Weight": p.weight_kg ? `${p.weight_kg} kg` : "—",
-        "Color": p.color || "—",
-        "Usage Area": p.usageArea || "—",
+        "Steel Grade":     p.steelGrade      || "ΓÇö",
+        "Frame Thickness": p.frameThickness  || "ΓÇö",
+        "Surface Finish":  p.surfaceFinish   || "ΓÇö",
+        "Load Capacity":   p.loadCapacityKg  ? `${p.loadCapacityKg} kg` : "ΓÇö",
+        "Dimensions":      `${p.length_cm}├ù${p.width_cm}├ù${p.height_cm} cm`,
+        "Weight":          p.weight_kg       ? `${p.weight_kg} kg` : "ΓÇö",
+        "Color":           p.color           || "ΓÇö",
+        "Usage Area":      p.usageArea       || "ΓÇö",
       },
-      sizes: [`${p.length_cm}×${p.width_cm}×${p.height_cm} cm`],
+      sizes: [`${p.length_cm}├ù${p.width_cm}├ù${p.height_cm} cm`],
       highlights: (p.features || "").split(",").map((f: string) => f.trim()).filter(Boolean),
       applications: [p.usageArea, p.recommendedFor].filter(Boolean) as string[],
       customizable: p.customizationAvailable === "Yes",
-      imageUrl: p.imageUrl || `https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=70`,
     };
   });
 
@@ -200,43 +190,9 @@ export default function Products() {
 
   function addToCart(p: MappedProduct) {
     setCartItems(prev => [...prev, p.id]);
+    setCartNotif({ name: p.name });
+    setTimeout(() => setCartNotif(null), 3200);
   }
-
-  const handleCustomizeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) {
-      setShowLogin(true);
-      return;
-    }
-    if (!customizeProduct) return;
-    
-    setSubmitting(true);
-    try {
-      await createInquiry({
-        name: user.displayName || "Customer",
-        email: user.email || "",
-        phone: customizeForm.phone || "", // If they didn't add phone
-        firebaseUid: user.uid,
-        productId: customizeProduct.id,
-        enquiryType: "fabrication",
-        type: "customization",
-        quantity: customizeForm.quantity || "1",
-        customDimensions: customizeForm.size,
-        timeline: customizeForm.date,
-        customNotes: customizeForm.notes,
-        message: `Delivery Location: ${customizeForm.location || "Not specified"}`
-      });
-      alert("Customization request submitted successfully!");
-      setCustomizeProduct(null);
-      setCustomizeForm({});
-      setUploadedFiles([]);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to submit request.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const particles = Array.from({ length: 26 }, (_, i) => ({
     left: `${(i * 3.9 + 1.4) % 100}%`, top: `${(i * 5.7 + 2.8) % 100}%`,
@@ -583,42 +539,49 @@ export default function Products() {
       {/* Cursor */}
       <div className="xcursor" style={{ left: cursorPos.x, top: cursorPos.y }} />
 
-      {/* Toast removed - cart no longer used */}
+      {/* Toast */}
+      {cartNotif && (
+        <div className="xtoast">
+          <span className="xtoast-ico">≡ƒ¢Æ</span>
+          <div><div className="xtoast-h">Added to Cart</div><div className="xtoast-s">{cartNotif.name}</div></div>
+          <div className="xtoast-bar" />
+        </div>
+      )}
 
-      {/* ═══════════════ HERO ═══════════════ */}
-      <section className="xhero" ref={heroSectionRef}>
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ HERO ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+      <section className="xhero" ref={heroRef.ref}>
         <div className="xhero-bg" />
         <div className="xhero-ov" />
         <div className="xgrid-bg" />
-        <div className="xorb xorb1" style={{ transform: `translate(${mouse.x * -28}px,${mouse.y * -18}px)` }} />
-        <div className="xorb xorb2" style={{ transform: `translate(${mouse.x * 22}px,${mouse.y * 22}px)` }} />
-        <div className="xorb xorb3" style={{ transform: `translate(${mouse.x * -14}px,${mouse.y * 14}px)` }} />
+        <div className="xorb xorb1" style={{ transform: `translate(${mouse.x*-28}px,${mouse.y*-18}px)` }} />
+        <div className="xorb xorb2" style={{ transform: `translate(${mouse.x*22}px,${mouse.y*22}px)` }} />
+        <div className="xorb xorb3" style={{ transform: `translate(${mouse.x*-14}px,${mouse.y*14}px)` }} />
         {particles.map((p, i) => (
-          <div key={i} className="xpt" style={{ left: p.left, top: p.top, width: p.size, height: p.size, animationDuration: p.dur, animationDelay: p.del }} />
+          <div key={i} className="xpt" style={{ left:p.left, top:p.top, width:p.size, height:p.size, animationDuration:p.dur, animationDelay:p.del }} />
         ))}
         <div className="xline1" /><div className="xline2" />
 
         <div className={`xhero-body ${heroLoaded ? "loaded" : ""}`}>
           <div className="xeyebrow">
             <span className="xebar xebar1" />
-            ShriKrishnaSteelWorks · Est. 2006 · Maharashtra
+            ShriKrishnaSteelWorks ┬╖ Est. 2006 ┬╖ Maharashtra
             <span className="xebar xebar2" />
           </div>
           <h1 className="xhero-title">
             <span className="xt1">PRODUCT</span>
             <span className="xt2">CATALOG</span>
-            <span className="xt-badge">2024–25</span>
+            <span className="xt-badge">2024ΓÇô25</span>
           </h1>
           <p className="xhero-sub">
             Premium steel furniture, railings, kitchen trolleys, hotel furniture &amp; structural solutions.
-            10,000+ products across 7 categories — built for industry, designed for life.
+            10,000+ products across 7 categories ΓÇö built for industry, designed for life.
           </p>
           <div className="xhero-ctas">
             <a href="#xcat" className="xbtn-p">
               Browse Catalog
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17l9.2-9.2M17 17V7H7" /></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>
             </a>
-            <Link to="/contact" className="xbtn-g">Get Custom Quote →</Link>
+            <Link to="/contact" className="xbtn-g">Get Custom Quote ΓåÆ</Link>
           </div>
         </div>
 
@@ -629,15 +592,15 @@ export default function Products() {
 
         <div className="xstats">
           <StatCounter end={10000} suffix="+" label="Products" />
-          <StatCounter end={7} suffix="" label="Categories" />
-          <StatCounter end={18} suffix="+" label="Years Experience" />
-          <StatCounter end={5000} suffix="+" label="Happy Clients" />
-          <StatCounter end={99} suffix="%" label="On-Time Delivery" />
+          <StatCounter end={7}     suffix=""  label="Categories" />
+          <StatCounter end={18}    suffix="+" label="Years Experience" />
+          <StatCounter end={5000}  suffix="+" label="Happy Clients" />
+          <StatCounter end={99}    suffix="%" label="On-Time Delivery" />
         </div>
         <div className="xhero-cut" />
       </section>
 
-      {/* ═══════════════ FILTER ═══════════════ */}
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ FILTER ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       <section className="xfilter" id="xcat">
         <div className="xshimmer-line" />
         <div className="xwrap">
@@ -646,10 +609,10 @@ export default function Products() {
               {/* Search */}
               <div className="xsearch-wrap">
                 <span className="xsearch-ico">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                 </span>
-                <input className="xsearch-inp" placeholder="Search by name, category, grade, features…" value={search} onChange={e => setSearch(e.target.value)} />
-                {search && <button className="xsearch-x" onClick={() => setSearch("")}>✕</button>}
+                <input className="xsearch-inp" placeholder="Search by name, category, grade, featuresΓÇª" value={search} onChange={e => setSearch(e.target.value)} />
+                {search && <button className="xsearch-x" onClick={() => setSearch("")}>Γ£ò</button>}
               </div>
 
               {/* Category dropdown */}
@@ -658,7 +621,7 @@ export default function Products() {
                   <span className="xdd-sym">{getCfg(activeCategory).icon}</span>
                   <span className="xdd-lbl">{activeCategory === "All" ? "All Products" : activeCategory}</span>
                   <span className="xdd-cnt">{total.toLocaleString()}</span>
-                  <svg className={`xdd-chev ${catDropdownOpen ? "open" : ""}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg>
+                  <svg className={`xdd-chev ${catDropdownOpen ? "open" : ""}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 {catDropdownOpen && (
                   <div className="xdd-panel">
@@ -666,10 +629,10 @@ export default function Products() {
                     {CATEGORIES.map(cat => (
                       <button key={cat.id} className={`xdd-item ${activeCategory === cat.id ? "active" : ""}`}
                         onClick={() => { setActiveCategory(cat.id); setCatDropdownOpen(false); }}>
-                        <span style={{ fontSize: "1rem", width: "24px", textAlign: "center", flexShrink: 0 }}>{getCfg(cat.id).icon}</span>
-                        <span style={{ flex: 1, textAlign: "left" }}>{cat.label}</span>
+                        <span style={{ fontSize:"1rem", width:"24px", textAlign:"center", flexShrink:0 }}>{getCfg(cat.id).icon}</span>
+                        <span style={{ flex:1, textAlign:"left" }}>{cat.label}</span>
                         <span className="xdd-item-cnt">{cat.count.toLocaleString()}</span>
-                        {activeCategory === cat.id && <span className="xdd-check">✓</span>}
+                        {activeCategory === cat.id && <span className="xdd-check">Γ£ô</span>}
                       </button>
                     ))}
                   </div>
@@ -681,15 +644,15 @@ export default function Products() {
               <div className="xresult">
                 <span className="xresult-n">{total.toLocaleString()}</span>
                 <span>product{total !== 1 ? "s" : ""} found</span>
-                {activeCategory !== "All" && <button className="xclear-btn" onClick={() => setActiveCategory("All")}>Clear ✕</button>}
-                {debouncedSearch && <button className="xclear-btn" onClick={() => setSearch("")}>Clear Search ✕</button>}
+                {activeCategory !== "All" && <button className="xclear-btn" onClick={() => setActiveCategory("All")}>Clear Γ£ò</button>}
+                {debouncedSearch && <button className="xclear-btn" onClick={() => setSearch("")}>Clear Search Γ£ò</button>}
               </div>
               <div className="xview-toggle">
                 <button className={`xvbtn ${viewMode === "grid" ? "on" : ""}`} onClick={() => setViewMode("grid")} title="Grid">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 </button>
                 <button className={`xvbtn ${viewMode === "list" ? "on" : ""}`} onClick={() => setViewMode("list")} title="List">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
               </div>
             </div>
@@ -697,14 +660,14 @@ export default function Products() {
         </div>
       </section>
 
-      {/* ═══════════════ GRID ═══════════════ */}
-      <section className="xsection" ref={gridSectionRef}>
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ GRID ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+      <section className="xsection" ref={gridRef.ref}>
         <div className="xwrap">
           {loading ? (
-            <div className="xloading"><div className="xloader" /><span className="xloading-t">Loading products…</span></div>
+            <div className="xloading"><div className="xloader" /><span className="xloading-t">Loading productsΓÇª</span></div>
           ) : filtered.length === 0 ? (
             <div className="xempty">
-              <span className="xempty-ico">🔩</span>
+              <span className="xempty-ico">≡ƒö⌐</span>
               <h3>No products found</h3>
               <p>Try a different search term or browse all categories</p>
               <button className="xempty-btn" onClick={() => { setSearch(""); setActiveCategory("All"); }}>Reset Filters</button>
@@ -716,15 +679,15 @@ export default function Products() {
                 const cartCount = cartItems.filter(id => id === product.id).length;
                 return (
                   <div key={product.id}
-                    className={`xcard ${gridSectionInView ? "vis" : ""} ${hoveredCard === product.id ? "hov" : ""}`}
-                    style={{ "--ca": product.accentColor, "--cg": product.glowColor, animationDelay: `${Math.min(i, 8) * 0.055}s` } as React.CSSProperties}
+                    className={`xcard ${gridRef.inView ? "vis" : ""} ${hoveredCard === product.id ? "hov" : ""}`}
+                    style={{ "--ca": product.accentColor, "--cg": product.glowColor, animationDelay: `${Math.min(i,8)*0.055}s` } as React.CSSProperties}
                     onMouseEnter={() => setHoveredCard(product.id)}
                     onMouseLeave={() => setHoveredCard(null)}>
                     <div className="xcard-ring" />
 
                     <div className="xcard-img">
                       <img
-                        src={product.imageUrl}
+                        src={`https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=70&sig=${i % 12}`}
                         alt={product.name} loading="lazy"
                       />
                       <div className="xcard-shade" />
@@ -732,12 +695,12 @@ export default function Products() {
                       <div className={`xav ${avClass}`}><span className="xav-dot" />{product.stock}</div>
                       {product.customizable && (
                         <div className="xcust-badge">
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2" /></svg>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
                           Customizable
                         </div>
                       )}
                       <div className="xqv">
-                        <button className="xqv-btn" onClick={() => { setDetailProduct(product); setActiveTab("specs"); }}>👁 Quick View</button>
+                        <button className="xqv-btn" onClick={() => { setDetailProduct(product); setActiveTab("specs"); }}>≡ƒæü Quick View</button>
                       </div>
                     </div>
 
@@ -747,7 +710,7 @@ export default function Products() {
                       <div className="xcard-grade">
                         <span className="xgdot" style={{ background: product.accentColor }} />
                         {product.grade}
-                        <span style={{ marginLeft: "auto" }}><Stars rating={product.rating} /></span>
+                        <span style={{ marginLeft:"auto" }}><Stars rating={product.rating} /></span>
                       </div>
                       <p className="xcard-desc">{product.shortDesc}</p>
                       <div className="xspec-pills">
@@ -764,19 +727,23 @@ export default function Products() {
                           <span className="xprice-u">{product.unit}</span>
                         </div>
                         <div className="xprice-meta">
-                          <span className="xmchip">⏱ {product.lead}</span>
-                          <span className="xmchip">🛡 {product.warranty}</span>
+                          <span className="xmchip">ΓÅ▒ {product.lead}</span>
+                          <span className="xmchip">≡ƒ¢í {product.warranty}</span>
                         </div>
                       </div>
                       <div className="xcard-acts">
                         <button className="xbtn-detail" style={{ "--ca": product.accentColor } as React.CSSProperties}
                           onClick={() => { setDetailProduct(product); setActiveTab("specs"); }}>
                           View Details
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                         </button>
                         <button className="xicobtn cust" title="Customize"
                           onClick={() => { setCustomizeProduct(product); setCustomizeForm({}); setUploadedFiles([]); }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        </button>
+                        <button className="xicobtn cart" title="Add to Cart" onClick={() => addToCart(product)}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                          {cartCount > 0 && <span className="xcart-badge">{cartCount}</span>}
                         </button>
                       </div>
                     </div>
@@ -789,15 +756,15 @@ export default function Products() {
 
           {!loading && total > 12 && (
             <div className="xpager">
-              <button className="xpager-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>← Prev</button>
+              <button className="xpager-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>ΓåÉ Prev</button>
               <span className="xpager-info">Page <strong>{page}</strong> of <strong>{Math.ceil(total / 12)}</strong></span>
-              <button className="xpager-btn" disabled={page >= Math.ceil(total / 12)} onClick={() => setPage(p => p + 1)}>Next →</button>
+              <button className="xpager-btn" disabled={page >= Math.ceil(total / 12)} onClick={() => setPage(p => p + 1)}>Next ΓåÆ</button>
             </div>
           )}
         </div>
       </section>
 
-      {/* ═══════════════ CTA ═══════════════ */}
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ CTA ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       <section className="xcta">
         <div className="xcta-orb" />
         <div className="xcta-wm">STEEL</div>
@@ -806,25 +773,25 @@ export default function Products() {
             <div>
               <div className="xcta-ey">Start a Project</div>
               <h2 className="xcta-title">Need a Custom<span className="xcta-hl">Steel Solution?</span></h2>
-              <p className="xcta-desc">Share your requirements — our engineers respond within 24 hours with grade, size and pricing tailored to your project.</p>
+              <p className="xcta-desc">Share your requirements ΓÇö our engineers respond within 24 hours with grade, size and pricing tailored to your project.</p>
             </div>
             <div className="xcta-btns">
-              <Link to="/contact" className="xcta-main">Get a Quote <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17l9.2-9.2M17 17V7H7" /></svg></Link>
+              <Link to="/contact" className="xcta-main">Get a Quote <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg></Link>
               <Link to="/projects" className="xcta-out">View Projects</Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ═══════════════ DETAIL MODAL ═══════════════ */}
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ DETAIL MODAL ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       {detailProduct && (
         <div className="xoverlay" onClick={() => setDetailProduct(null)}>
           <div className="xmodal xdmod" onClick={e => e.stopPropagation()} style={{ "--ca": detailProduct.accentColor, "--cg": detailProduct.glowColor } as React.CSSProperties}>
-            <button className="xclose" onClick={() => setDetailProduct(null)}>✕</button>
+            <button className="xclose" onClick={() => setDetailProduct(null)}>Γ£ò</button>
             <div className="xmod-bar" style={{ background: detailProduct.accentColor }} />
             <div className="xdmod-top">
               <div className="xdmod-imgbox">
-                <img src={detailProduct.imageUrl} alt={detailProduct.name} />
+                <img src="https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80" alt={detailProduct.name} />
                 <div className="xdmod-imgtag" style={{ background: detailProduct.accentColor }}>{detailProduct.tag}</div>
               </div>
               <div className="xdmod-info">
@@ -843,7 +810,7 @@ export default function Products() {
                   </span>
                 </div>
                 <div className="xdmod-meta">
-                  {[["📦", "Min. Order", detailProduct.minOrder], ["⏱", "Lead Time", detailProduct.lead], ["🛡", "Warranty", detailProduct.warranty], ["✨", "Finish", detailProduct.finish]].map(([ic, lbl, val]) => (
+                  {[["≡ƒôª","Min. Order",detailProduct.minOrder],["ΓÅ▒","Lead Time",detailProduct.lead],["≡ƒ¢í","Warranty",detailProduct.warranty],["Γ£¿","Finish",detailProduct.finish]].map(([ic,lbl,val]) => (
                     <div key={String(lbl)} className="xdmod-mi">
                       <span className="xdmi-ico">{ic}</span>
                       <div><div className="xdmi-lbl">{lbl}</div><div className="xdmi-val">{val}</div></div>
@@ -853,7 +820,7 @@ export default function Products() {
               </div>
             </div>
             <div className="xtabs">
-              {(["specs", "sizes", "highlights", "applications"] as const).map(tab => (
+              {(["specs","sizes","highlights","applications"] as const).map(tab => (
                 <button key={tab} className={`xtab ${activeTab === tab ? "on" : ""}`}
                   style={activeTab === tab ? { borderBottomColor: detailProduct.accentColor, color: detailProduct.accentColor } : {}}
                   onClick={() => setActiveTab(tab)}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
@@ -862,7 +829,7 @@ export default function Products() {
             <div className="xtab-body">
               {activeTab === "specs" && (
                 <div className="xspecs-grid">
-                  {Object.entries(detailProduct.specs).map(([k, v]) => (
+                  {Object.entries(detailProduct.specs).map(([k,v]) => (
                     <div key={k} className="xspec-row"><span className="xsk">{k}</span><span className="xsv" style={{ color: detailProduct.accentColor }}>{v}</span></div>
                   ))}
                 </div>
@@ -875,8 +842,8 @@ export default function Products() {
               {activeTab === "highlights" && (
                 <div className="xhl-list">
                   {detailProduct.highlights.map((h, idx) => (
-                    <div key={h} className="xhl-row" style={{ animationDelay: `${idx * 0.07}s` }}>
-                      <div className="xhl-num" style={{ background: detailProduct.accentColor }}>0{idx + 1}</div>
+                    <div key={h} className="xhl-row" style={{ animationDelay: `${idx*0.07}s` }}>
+                      <div className="xhl-num" style={{ background: detailProduct.accentColor }}>0{idx+1}</div>
                       <span>{h}</span>
                     </div>
                   ))}
@@ -891,91 +858,93 @@ export default function Products() {
               )}
             </div>
             <div className="xmod-footer">
+              <button className="xmf-btn cart" style={{ background: detailProduct.accentColor }}
+                onClick={() => { addToCart(detailProduct); setDetailProduct(null); }}>≡ƒ¢Æ Add to Cart</button>
               <button className="xmf-btn cust"
-                onClick={() => { setCustomizeProduct(detailProduct); setDetailProduct(null); setCustomizeForm({}); setUploadedFiles([]); }}>⚙️ Customize</button>
-              <Link to="/contact" className="xmf-link" onClick={() => setDetailProduct(null)}>📋 Get Quotation →</Link>
+                onClick={() => { setCustomizeProduct(detailProduct); setDetailProduct(null); setCustomizeForm({}); setUploadedFiles([]); }}>ΓÜÖ∩╕Å Customize</button>
+              <Link to="/contact" className="xmf-link" onClick={() => setDetailProduct(null)}>Get Quote ΓåÆ</Link>
             </div>
           </div>
         </div>
       )}
 
-      {/* ═══════════════ CUSTOMIZE MODAL ═══════════════ */}
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ CUSTOMIZE MODAL ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       {customizeProduct && (
         <div className="xoverlay" onClick={() => setCustomizeProduct(null)}>
           <div className="xmodal xcmod" onClick={e => e.stopPropagation()} style={{ "--ca": customizeProduct.accentColor } as React.CSSProperties}>
-            <button className="xclose" onClick={() => setCustomizeProduct(null)}>✕</button>
+            <button className="xclose" onClick={() => setCustomizeProduct(null)}>Γ£ò</button>
             <div className="xmod-bar" style={{ background: customizeProduct.accentColor }} />
             <div className="xcmod-head">
               <div className="xcgear" style={{ color: customizeProduct.accentColor }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
               </div>
               <div>
                 <div className="xcmod-title">Customize Order</div>
                 <div className="xcmod-sub" style={{ color: customizeProduct.accentColor }}>{customizeProduct.name}</div>
               </div>
             </div>
-            <form className="xcform" onSubmit={handleCustomizeSubmit}>
+            <form className="xcform" onSubmit={e => { e.preventDefault(); setShowLogin(true); }}>
               {CUSTOMIZE_FIELDS.map((f, idx) => (
-                <div key={f.name} className="xcfield" style={{ animationDelay: `${idx * 0.07}s` }}>
+                <div key={f.name} className="xcfield" style={{ animationDelay: `${idx*0.07}s` }}>
                   <label className="xclabel">{f.label}</label>
                   {f.type === "textarea"
-                    ? <textarea className="xcinput xctarea" placeholder={f.placeholder} required={f.required} rows={3} value={customizeForm[f.name] || ""} onChange={e => setCustomizeForm(p => ({ ...p, [f.name]: e.target.value }))} />
-                    : <input className="xcinput" type={f.type} placeholder={f.placeholder} required={f.required} value={customizeForm[f.name] || ""} onChange={e => setCustomizeForm(p => ({ ...p, [f.name]: e.target.value }))} />
+                    ? <textarea className="xcinput xctarea" placeholder={f.placeholder} rows={3} value={customizeForm[f.name]||""} onChange={e => setCustomizeForm(p => ({...p,[f.name]:e.target.value}))} />
+                    : <input className="xcinput" type={f.type} placeholder={f.placeholder} value={customizeForm[f.name]||""} onChange={e => setCustomizeForm(p => ({...p,[f.name]:e.target.value}))} />
                   }
                 </div>
               ))}
-              <div className="xcfield" style={{ animationDelay: `${CUSTOMIZE_FIELDS.length * 0.07}s` }}>
-                <label className="xclabel">Upload Reference Files<span className="xupload-hint">PDF · PNG · DWG</span></label>
+              <div className="xcfield" style={{ animationDelay: `${CUSTOMIZE_FIELDS.length*0.07}s` }}>
+                <label className="xclabel">Upload Reference Files<span className="xupload-hint">PDF ┬╖ PNG ┬╖ DWG</span></label>
                 <div className="xupzone" style={{ borderColor: `${customizeProduct.accentColor}55` }}
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add("drag"); }}
                   onDragLeave={e => e.currentTarget.classList.remove("drag")}
                   onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove("drag"); if (e.dataTransfer.files) setUploadedFiles(p => [...p, ...Array.from(e.dataTransfer.files)]); }}>
                   <div className="xupzone-ico" style={{ color: customizeProduct.accentColor }}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" /></svg>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                   </div>
                   <div className="xupzone-lbl">
                     <span className="xupzone-act" style={{ color: customizeProduct.accentColor }}>Click to upload</span>
                     <span className="xupzone-or"> or drag &amp; drop</span>
                   </div>
-                  <div className="xupzone-info">PDF · PNG · JPG · DWG · Max 10MB each</div>
+                  <div className="xupzone-info">PDF ┬╖ PNG ┬╖ JPG ┬╖ DWG ┬╖ Max 10MB each</div>
                 </div>
-                <input ref={fileInputRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.dwg,.dxf" multiple style={{ display: "none" }} onChange={e => { if (e.target.files) setUploadedFiles(p => [...p, ...Array.from(e.target.files!)]); }} />
+                <input ref={fileInputRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.dwg,.dxf" multiple style={{ display:"none" }} onChange={e => { if (e.target.files) setUploadedFiles(p => [...p, ...Array.from(e.target.files!)]); }} />
                 {uploadedFiles.length > 0 && (
                   <div className="xfile-list">
                     {uploadedFiles.map((file, idx) => (
                       <div key={idx} className="xfile-item">
-                        <span className="xfile-ico">{file.type === "application/pdf" ? "📄" : file.type.startsWith("image/") ? "🖼️" : "📐"}</span>
+                        <span className="xfile-ico">{file.type==="application/pdf"?"≡ƒôä":file.type.startsWith("image/")?"≡ƒû╝∩╕Å":"≡ƒôÉ"}</span>
                         <span className="xfile-name">{file.name}</span>
-                        <span className="xfile-size">{(file.size / 1024).toFixed(0)} KB</span>
-                        <button type="button" className="xfile-rm" onClick={() => setUploadedFiles(p => p.filter((_, i) => i !== idx))}>✕</button>
+                        <span className="xfile-size">{(file.size/1024).toFixed(0)} KB</span>
+                        <button type="button" className="xfile-rm" onClick={() => setUploadedFiles(p => p.filter((_,i) => i!==idx))}>Γ£ò</button>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-              <button type="submit" className="xcsubmit" style={{ background: customizeProduct.accentColor }} disabled={submitting}>
-                {submitting ? "Submitting..." : "Submit Customization Request →"}
+              <button type="submit" className="xcsubmit" style={{ background: customizeProduct.accentColor }}>
+                Submit Customization Request ΓåÆ
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* ═══════════════ LOGIN MODAL ═══════════════ */}
+      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ LOGIN MODAL ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       {showLogin && (
         <div className="xoverlay" onClick={() => setShowLogin(false)}>
           <div className="xmodal xlmod" onClick={e => e.stopPropagation()}>
-            <button className="xclose" onClick={() => setShowLogin(false)}>✕</button>
+            <button className="xclose" onClick={() => setShowLogin(false)}>Γ£ò</button>
             <div className="xlstrip" />
-            <div className="xlico-wrap"><div className="xlico">🔐</div><div className="xlring" /></div>
+            <div className="xlico-wrap"><div className="xlico">≡ƒöÉ</div><div className="xlring" /></div>
             <h2 className="xltitle">Login Required</h2>
             <p className="xldesc">To submit a customization request, please log in or create a free account.</p>
             <div className="xlacts">
               <Link to="/login" className="xlprimary" onClick={() => setShowLogin(false)}>Login to Account</Link>
               <button className="xlghost" onClick={() => setShowLogin(false)}>Continue as Guest</button>
             </div>
-            <div className="xlnote">New user? <Link to="/login" onClick={() => setShowLogin(false)}>Register free →</Link></div>
+            <div className="xlnote">New user? <Link to="/login" onClick={() => setShowLogin(false)}>Register free ΓåÆ</Link></div>
           </div>
         </div>
       )}

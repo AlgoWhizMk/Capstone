@@ -35,13 +35,12 @@ const [cartCount] = useState(0);
     navigate("/");
   };
 
-  // Projects is admin-only — hide from guests and regular users
   const allNavLinks = [
     { to: "/",         label: "Home"     },
     { to: "/about",    label: "About"    },
+    { to: "/projects", label: "Projects" },
     { to: "/products", label: "Products" },
     { to: "/contact",  label: "Contact"  },
-    ...(isAdmin ? [{ to: "/projects", label: "Projects" }] : []),
   ];
   const navLinks = allNavLinks;
 

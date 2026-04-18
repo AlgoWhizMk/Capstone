@@ -37,6 +37,8 @@ export interface MongoOrder {
   createdAt:   string;
   isCustomized?: boolean;
   customDetails?: Record<string, string>;
+  notes?: string;
+  deliveryAddress?: string;
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────
@@ -164,3 +166,52 @@ export const updateProduct = (id: string, data: Partial<MongoProduct>) =>
 // Delete a product
 export const deleteProduct = (id: string) =>
   request<{ message: string }>(`/products/${id}`, { method: "DELETE" });
+
+// ── Inquiries API ─────────────────────────────────────────────────────────────
+
+export interface MongoInquiry {
+  _id: string;
+  name: string;
+  company?: string;
+  phone: string;
+  email: string;
+  enquiryType?: string;
+  projectType?: string;
+  steelGrade?: string;
+  quantity?: string;
+  message?: string;
+  timeline?: string;
+  customDimensions?: string;
+  customFinish?: string;
+  customMaterial?: string;
+  customNotes?: string;
+  customizationFiles?: string[];
+  firebaseUid?: string;
+  status: "Pending" | "Reviewed" | "Approved" | "Responded" | "Rejected";
+  adminNotes?: string;
+  adminResponse?: string;
+  referenceName?: string;
+  referenceCategory?: string;
+  productId?: string;
+  projectId?: string;
+  productDetails?: MongoProduct;
+  projectDetails?: any;
+  type?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Get all inquiries (Admin only)
+export const getAllInquiries = () => request<MongoInquiry[]>("/inquiries");
+
+// Get inquiries for a specific user
+export const getUserInquiries = (firebaseUid: string) =>
+  request<MongoInquiry[]>(`/inquiries/user/${firebaseUid}`);
+
+// Create a new inquiry
+export const createInquiry = (data: Partial<MongoInquiry>) =>
+  request<MongoInquiry>("/inquiries", { method: "POST", body: JSON.stringify(data) });
+
+// Update inquiry status/response (Admin)
+export const updateInquiry = (id: string, updates: Partial<MongoInquiry>) =>
+  request<MongoInquiry>(`/inquiries/${id}`, { method: "PUT", body: JSON.stringify(updates) });
