@@ -13,6 +13,46 @@ interface Message {
   suggestions?: string[]; // AI-generated follow-up suggestions
 }
 
+// ─── Speech Recognition Types ───────────────────────────────────────────
+interface SpeechRecognitionEvent extends Event {
+  results: {
+    [key: number]: {
+      [key: number]: {
+        transcript: string;
+      };
+    };
+  };
+}
+
+interface SpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: Event) => void;
+  onend: (event: Event) => void;
+  start: () => void;
+  stop: () => void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+  }
+}
+
+declare var SpeechRecognition: {
+  new (): SpeechRecognition;
+};
+
+declare var webkitSpeechRecognition: {
+  new (): SpeechRecognition;
+};
+
 // ─── ═══════════════════════════════════════════════════════════════════════════
 //     CLIENT-SIDE ML ENGINE — Intent Detection + Sentiment Analysis + NLP
 // ════════════════════════════════════════════════════════════════════════════════
@@ -462,15 +502,13 @@ export default function ChatBot() {
 
   // ── Voice input ──────────────────────────────────────────────────────────────
   const toggleVoice = () => {
-    const SR =
-      (window as unknown as { SpeechRecognition?: typeof window.SpeechRecognition }).SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: typeof window.SpeechRecognition }).webkitSpeechRecognition;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { alert("Voice input requires Chrome or Edge."); return; }
     if (isListening) { recogRef.current?.stop(); return; }
     const r = new SR();
     r.lang = "en-IN";
     r.interimResults = false;
-    r.onresult = (e) => { setInput(e.results[0][0].transcript); setIsListening(false); };
+    r.onresult = (e: SpeechRecognitionEvent) => { setInput(e.results[0][0].transcript); setIsListening(false); };
     r.onerror = r.onend = () => setIsListening(false);
     r.start();
     recogRef.current = r;

@@ -34,7 +34,7 @@ function useMouseParallax() {
 // ─── Category Config ──────────────────────────────────────────────────────────
 const CAT_CONFIG: Record<string, { icon: string; accent: string; glow: string }> = {
   "All": { icon: "◈", accent: "#4A90D9", glow: "rgba(74,144,217,0.4)" },
-  "Steel Furniture Works": { icon: "🪑", accent: "#E8B84B", glow: "rgba(232,184,75,0.4)" },
+  "Steel Furniture Works": { icon: "🗄️", accent: "#E8B84B", glow: "rgba(232,184,75,0.4)" },
   "Home Steel Furnitures": { icon: "🏠", accent: "#E67E22", glow: "rgba(230,126,34,0.4)" },
   "Commercial Building Structures": { icon: "🏗️", accent: "#4A90D9", glow: "rgba(74,144,217,0.4)" },
   "SS Railing": { icon: "🔩", accent: "#2ECC71", glow: "rgba(46,204,113,0.4)" },
@@ -169,7 +169,7 @@ export default function Products() {
       highlights: (p.features || "").split(",").map((f: string) => f.trim()).filter(Boolean),
       applications: [p.usageArea, p.recommendedFor].filter(Boolean) as string[],
       customizable: p.customizationAvailable === "Yes",
-      imageUrl: p.imageUrl || `https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=70`,
+      imageUrl: `/Product Images/${p.productId}A.jpg`,
     };
   });
 

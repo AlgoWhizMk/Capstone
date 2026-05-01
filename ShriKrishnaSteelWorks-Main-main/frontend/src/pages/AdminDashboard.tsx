@@ -118,7 +118,7 @@ const MOCK_PROJECTS: Project[] = [
 ];
 
 // ─── Rich detail data for each project (modal) ─────────────────────────────
-const PROJECT_DETAIL_MAP: Record<string, import("../components/ProjectDetailModal").ProjectDetailData> = {
+const PROJECT_DETAIL_MAP: Record<string, ProjectDetailData> = {
   "PRJ-001": {
     id: "PRJ-001",
     name: "Industrial Warehouse Steel Framework",

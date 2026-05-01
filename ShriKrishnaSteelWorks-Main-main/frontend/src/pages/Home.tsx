@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import heroVideo from "../assets/videos/hero-bg.mp4";
+import { useProducts } from "../../hooks/useProducts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
-  id: number;
+  id: number | string;
   name: string;
   category: string;
   description: string;
@@ -141,7 +142,7 @@ const PRODUCTS: Product[] = [
     category: "Steel Furniture Works",
     description: "Heavy-duty steel chairs, tables, industrial racks & storage solutions. Powder-coated finish available.",
     price: "Get Quote",
-    icon: "🪑",
+    icon: "🗄️",
     image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
     details: {
       grades: ["IS 2062", "CRCA Sheet"],
@@ -626,6 +627,24 @@ export default function Home() {
   // FAQ state
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  const { products: apiProducts } = useProducts("", "All", 6, 1);
+  const displayProducts = apiProducts.length > 0 ? apiProducts.map(p => ({
+    id: p.productId,
+    name: p.productName,
+    category: p.category,
+    description: (p.productDescription || "").substring(0, 100) + "...",
+    price: `₹${Number(p.finalPriceINR).toLocaleString("en-IN")}`,
+    icon: p.category === "SS Railing" ? "🔩" : p.category.includes("Furniture") ? "🗄️" : p.category.includes("Kitchen") ? "🛒" : "⚙️",
+    image: `/Product Images/${p.productId}A.jpg`,
+    details: {
+      grades: [p.steelGrade || p.furnitureType || "Standard"],
+      sizes: `${p.length_cm}×${p.width_cm}×${p.height_cm} cm`,
+      applications: [p.usageArea, p.recommendedFor].filter(Boolean) as string[],
+      minOrder: "1 piece",
+      delivery: `${p.leadTimeDays} days`,
+    }
+  })) : PRODUCTS.slice(0, 6);
+
   // Process steps animation
   const HOW_STEPS = [
     { step: "01", title: "Browse & Select", desc: "Explore our product catalog and filter by category, grade, and size.", icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>' },
@@ -755,7 +774,7 @@ export default function Home() {
           <p className="skw-section-sub">From TMT bars to custom fabrication — every grade, every size, delivered to site.</p>
         </div>
         <div className="skw-products-grid">
-          {PRODUCTS.slice(0, 6).map((p, i) => (
+          {displayProducts.map((p, i) => (
             <div key={p.id} className="skw-product-card" style={{ animationDelay: `${i * 0.1}s` }}>
               <div className="skw-product-img-wrap">
                 <img src={p.image} alt={p.name} className="skw-product-img" />
