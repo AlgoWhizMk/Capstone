@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import heroVideo from "../assets/videos/hero-bg.mp4";
 import { useProducts } from "../../hooks/useProducts";
+import { createInquiry } from "../services/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -395,13 +396,44 @@ function ImageSlider() {
 
 // ─── Product Detail Modal ─────────────────────────────────────────────────────
 function ProductModal({ product, onClose }: { product: Product; onClose: () => void }) {
+  const { user } = useAuth();
   const [showCustomize, setShowCustomize] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({ length: "", thickness: "", grade: "", quantity: "", notes: "" });
 
   useEffect(() => { document.body.style.overflow = "hidden"; return () => { document.body.style.overflow = ""; }; }, []);
 
-  const handleSubmitCustomize = () => setShowLoginPrompt(true);
+  const handleSubmitCustomize = async () => {
+    if (!user) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      await createInquiry({
+        name: user.displayName || "Customer",
+        email: user.email || "",
+        phone: "", 
+        firebaseUid: user.uid,
+        productId: String(product.id),
+        enquiryType: "fabrication",
+        type: "customization",
+        quantity: form.quantity || "1",
+        customDimensions: form.length && form.thickness ? `${form.length}mm x ${form.thickness}mm` : "",
+        customNotes: form.notes,
+        steelGrade: form.grade
+      });
+      alert("Customization request submitted successfully!");
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit request.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="skw-modal-overlay" onClick={onClose}>
@@ -494,8 +526,8 @@ function ProductModal({ product, onClose }: { product: Product; onClose: () => v
               <label>Special Notes / Upload Drawing</label>
               <textarea placeholder="Describe your requirements or mention if you have a DWG file to upload..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="skw-input skw-textarea" />
             </div>
-            <button className="skw-btn-primary skw-submit-btn" onClick={handleSubmitCustomize}>
-              Submit Customization Request →
+            <button className="skw-btn-primary skw-submit-btn" onClick={handleSubmitCustomize} disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Customization Request →"}
             </button>
           </div>
         )}
