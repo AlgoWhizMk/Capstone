@@ -635,7 +635,7 @@ export default function Home() {
     description: (p.productDescription || "").substring(0, 100) + "...",
     price: `₹${Number(p.finalPriceINR).toLocaleString("en-IN")}`,
     icon: p.category === "SS Railing" ? "🔩" : p.category.includes("Furniture") ? "🗄️" : p.category.includes("Kitchen") ? "🛒" : "⚙️",
-    image: `/Product Images/${p.productId}A.jpg`,
+    image: `/product-images/${p.productId}A.jpg`,
     details: {
       grades: [p.steelGrade || p.furnitureType || "Standard"],
       sizes: `${p.length_cm}×${p.width_cm}×${p.height_cm} cm`,

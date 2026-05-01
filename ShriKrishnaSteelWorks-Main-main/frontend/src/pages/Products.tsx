@@ -169,7 +169,7 @@ export default function Products() {
       highlights: (p.features || "").split(",").map((f: string) => f.trim()).filter(Boolean),
       applications: [p.usageArea, p.recommendedFor].filter(Boolean) as string[],
       customizable: p.customizationAvailable === "Yes",
-      imageUrl: `/Product Images/${p.productId}A.jpg`,
+      imageUrl: `/product-images/${p.productId}A.jpg`,
     };
   });
 
